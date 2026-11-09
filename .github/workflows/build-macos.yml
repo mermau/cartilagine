@@ -1,0 +1,97 @@
+name: Build macOS
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write   # per pubblicare le release
+
+jobs:
+  macos:
+    runs-on: macos-15          # Apple Silicon
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache JUCE
+        uses: actions/cache@v4
+        with:
+          path: build/_deps
+          key: juce-${{ runner.os }}-${{ hashFiles('CMakeLists.txt') }}
+
+      - name: Configura (universal binary arm64 + x86_64)
+        run: cmake -B build -G Xcode -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
+
+      - name: Compila
+        run: cmake --build build --config Release --parallel
+
+      - name: Test del modello (LFO, taratura, filtro, VCA, convergenza, click)
+        run: ./build/Release/circuit_test && ./build/Release/click_test
+
+      - name: Test del processore (blocchi, CC MIDI, interruttori, MIDI Learn, stato)
+        run: |
+          cmake -B build-test -DCRT_BUILD_PLUGIN=OFF -DCRT_BUILD_TESTS=OFF -DCRT_BUILD_PROCESSOR_TEST=ON \
+                -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=arm64 -DJUCE_DIR="$PWD/build/_deps/juce-src"
+          cmake --build build-test --parallel
+          ./build-test/processor_test_artefacts/Release/processor_test
+
+      - name: Firma ad-hoc e pacchetto
+        run: |
+          A=build/Cartilagine_artefacts/Release
+          mkdir -p "dist/CARTILAGINE"
+          cp -R "$A/VST3/CARTILAGINE.vst3" "$A/AU/CARTILAGINE.component" "$A/Standalone/CARTILAGINE.app" "dist/CARTILAGINE/"
+          for p in "dist/CARTILAGINE/"*; do codesign --force --deep --sign - "$p"; done
+          cp scripts/installa.command "dist/CARTILAGINE/Installa CARTILAGINE.command"
+          chmod +x "dist/CARTILAGINE/Installa CARTILAGINE.command"
+          cp README.md "dist/CARTILAGINE/"
+          lipo -info "dist/CARTILAGINE/CARTILAGINE.vst3/Contents/MacOS/CARTILAGINE"
+          (cd dist && ditto -c -k --keepParent "CARTILAGINE" ../CARTILAGINE-macOS.zip)
+
+      - name: Validazione con pluginval (VST3 e AU) e auval
+        run: |
+          curl -sSL -o pluginval.zip https://github.com/Tracktion/pluginval/releases/download/v1.0.4/pluginval_macOS.zip
+          unzip -q pluginval.zip
+          PV=pluginval.app/Contents/MacOS/pluginval
+          mkdir -p ~/Library/Audio/Plug-Ins/VST3 ~/Library/Audio/Plug-Ins/Components
+          cp -R "dist/CARTILAGINE/CARTILAGINE.vst3" ~/Library/Audio/Plug-Ins/VST3/
+          cp -R "dist/CARTILAGINE/CARTILAGINE.component" ~/Library/Audio/Plug-Ins/Components/
+          killall -9 AudioComponentRegistrar 2>/dev/null || true
+          $PV --strictness-level 7 --validate-in-process --skip-gui-tests --timeout-ms 600000 \
+              --validate ~/Library/Audio/Plug-Ins/VST3/CARTILAGINE.vst3
+          auval -v aufx Crtl Clfx
+          $PV --strictness-level 7 --validate-in-process --skip-gui-tests --timeout-ms 600000 \
+              --validate ~/Library/Audio/Plug-Ins/Components/CARTILAGINE.component
+
+      - name: Carica l'artefatto
+        uses: actions/upload-artifact@v4
+        with:
+          name: CARTILAGINE-macOS
+          path: CARTILAGINE-macOS.zip
+
+      # Release: con un tag v* oppure, sul ramo main, quando la versione in CMakeLists.txt
+      # non ha ancora un tag (si alza la versione, si fa push, la release si crea da sola)
+      - name: Pubblica la release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            TAG="$GITHUB_REF_NAME"
+          elif [[ "$GITHUB_REF" == refs/heads/main ]]; then
+            VER=$(sed -nE 's/^project\(Cartilagine VERSION ([0-9.]+).*/\1/p' CMakeLists.txt)
+            TAG="v$VER"
+            if gh release view "$TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              echo "La release $TAG esiste già: niente da fare"; exit 0
+            fi
+          else
+            exit 0
+          fi
+          NOTES="Build macOS universale (Apple Silicon e Intel): VST3, AU, applicazione autonoma e installatore.
+
+          Installazione: estrai lo zip, togli la quarantena con xattr -dr com.apple.quarantine sulla cartella CARTILAGINE, poi doppio clic su Installa CARTILAGINE.command."
+          gh release create "$TAG" CARTILAGINE-macOS.zip \
+            -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "Collateral Effects CARTILAGINE $TAG" --notes "$NOTES"
