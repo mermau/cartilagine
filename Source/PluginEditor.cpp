@@ -323,19 +323,20 @@ void ToggleSwitch::drawToggle (juce::Graphics& g, juce::Rectangle<float> b, bool
     g.fillEllipse (Rectangle<float> (15 * k, 15 * k).withCentre (c));
     g.setColour (Colour (0xff2a2a2c));
     g.fillEllipse (Rectangle<float> (7 * k, 7 * k).withCentre (c));
-    // levetta (in alto = VCA, in basso = VCF)
+    // levetta (in alto = VCA, in basso = VCF): inclinata di circa 15 gradi, quindi vista
+    // dall'alto sporge poco dalla boccola e la pallina in cima sembra più grande
     const float dir = up ? -1.0f : 1.0f;
-    const auto tip = c.translated (0, dir * 24 * k);
+    const auto tip = c.translated (0, dir * 11 * k);
     Path lever;
-    lever.startNewSubPath (c.x - 2.6f * k, c.y);
-    lever.lineTo (tip.x - 3.6f * k, tip.y); lever.lineTo (tip.x + 3.6f * k, tip.y);
-    lever.lineTo (c.x + 2.6f * k, c.y); lever.closeSubPath();
+    lever.startNewSubPath (c.x - 2.8f * k, c.y);
+    lever.lineTo (tip.x - 3.4f * k, tip.y); lever.lineTo (tip.x + 3.4f * k, tip.y);
+    lever.lineTo (c.x + 2.8f * k, c.y); lever.closeSubPath();
     g.setColour (Colours::black.withAlpha (0.3f));
-    g.fillPath (lever, AffineTransform::translation (2 * k, 3 * k));
+    g.fillEllipse (Rectangle<float> (10 * k, 10 * k).withCentre (tip.translated (2.5f * k, (up ? -1.0f : 4.0f) * k)));
     g.setGradientFill (ColourGradient (Colour (0xfff4f5f6), c.x - 4 * k, 0, Colour (0xff7d8187), c.x + 4 * k, 0, false));
     g.fillPath (lever);
-    g.setGradientFill (chrome (tip, 4.5f * k, 0.0f));
-    g.fillEllipse (Rectangle<float> (9 * k, 9 * k).withCentre (tip));
+    g.setGradientFill (chrome (tip, 5.0f * k, 0.0f));
+    g.fillEllipse (Rectangle<float> (9.5f * k, 9.5f * k).withCentre (tip));
     if (highlighted) { g.setColour (Colours::white.withAlpha (0.08f)); g.fillEllipse (Rectangle<float> (30 * k, 30 * k).withCentre (c)); }
 }
 
@@ -577,24 +578,19 @@ void InteriorPanel::paint (juce::Graphics& g)
 // BIAS / DEPTH / GAIN / LEVEL in alto); scritte e grafica proprie.
 namespace
 {
-    // la "scintilla": un dente di sega spezzato, cioè la rampa dell'LFO che scarica
-    juce::Path sparkPath (std::function<juce::Point<float> (float, float)> P, float u)
+    // il fulmine nero che attraversa il riquadro del nome (come sul Gristleizer grigio)
+    juce::Path boltPath (std::function<juce::Point<float> (float, float)> P, float)
     {
-        using namespace juce;
-        const Point<float> pts[] = { P (300, 270), P (252, 330), P (280, 330), P (226, 396), P (254, 396), P (196, 466) };
-        Path centre;
-        centre.startNewSubPath (pts[0]);
-        for (int i = 1; i < 6; ++i) centre.lineTo (pts[i]);
-        Path out;
-        PathStrokeType (12.0f * u, PathStrokeType::mitered, PathStrokeType::butt).createStrokedPath (out, centre);
-        // punta
-        const auto a = pts[4], b = pts[5];
-        const auto d = (b - a) / a.getDistanceFrom (b);
-        const Point<float> n (-d.y, d.x);
-        Path tip;
-        tip.addTriangle (b - n * (11.0f * u), b + n * (11.0f * u), b + d * (24.0f * u));
-        out.addPath (tip);
-        return out;
+        juce::Path b;
+        b.startNewSubPath (P (296, 262));      // estremità superiore
+        b.lineTo (P (320, 262));
+        b.lineTo (P (262, 342));
+        b.lineTo (P (288, 342));
+        b.lineTo (P (182, 470));               // punta inferiore
+        b.lineTo (P (232, 366));
+        b.lineTo (P (206, 366));
+        b.closeSubPath();
+        return b;
     }
 }
 
@@ -690,14 +686,17 @@ void GristleEditor::drawPedal (juce::Graphics& g, juce::Rectangle<float> body, j
     drawBaseline (g, F (12.0f, 0.6f), "VCA", P (modeX + 20, 0).x, P (0, modeY - 14).y, Justification::left);
     drawBaseline (g, F (12.0f, 0.6f), "VCF", P (modeX + 20, 0).x, P (0, modeY + 26).y, Justification::left);
 
-    // riquadro con il nome, attraversato dalla scintilla
-    const Rectangle<float> box (P (26, 290), P (236, 350));
+    // riquadro bianco con il nome, attraversato dal fulmine
+    const Rectangle<float> box (P (24, 300), P (306, 352));
+    g.setColour (Colour (0xfff3f3f1));
+    g.fillRect (box);
     g.setColour (ink);
-    g.drawRect (box, 2.2f * u);
-    drawBaseline (g, F (21.0f, 0.4f), "Cartilagine", P (38, 0).x, P (0, 329).y, Justification::left);
-    for (auto [line, yy] : { std::pair<const char*, float> { "MODULATORE", 374.0f }, { "A TENSIONE", 388.0f }, { "DI CONTROLLO", 402.0f } })
-        drawBaseline (g, F (9.0f, 0.5f), line, P (36, 0).x, P (0, yy).y, Justification::left);
-    g.fillPath (sparkPath (P, u));
+    g.drawRect (box, 2.4f * u);
+    drawBaseline (g, F (22.0f, 0.4f), "Cartilagine", P (36, 0).x, P (0, 335).y, Justification::left);
+    for (auto [line, yy] : { std::pair<const char*, float> { "INDUSTRIAL", 378.0f }, { "MUSIC FOR", 392.0f },
+                             { "INDUSTRIAL", 406.0f }, { "PEOPLE", 420.0f } })
+        drawBaseline (g, F (9.5f, 0.5f), line, P (34, 0).x, P (0, yy).y, Justification::left);
+    g.fillPath (boltPath (P, u));
 
     // marchio
     g.setColour (ink.withAlpha (0.85f));
@@ -723,9 +722,9 @@ juce::Image GristleEditor::createAppIcon (int size)
     g.strokePath (bodyPath, PathStrokeType (4.0f * u));
     // la scintilla in grande, con una manopola
     const float s = 2.6f * u;
-    auto P = [s, u] (float x, float y) { return Point<float> ((x - 248.0f) * s + 600.0f * u, (y - 368.0f) * s + 540.0f * u); };
+    auto P = [s, u] (float x, float y) { return Point<float> ((x - 251.0f) * s + 610.0f * u, (y - 366.0f) * s + 560.0f * u); };
     g.setColour (ink);
-    g.fillPath (sparkPath (P, s));
+    g.fillPath (boltPath (P, s));
     PedalLookAndFeel::drawPedalKnob (g, { 330 * u, 360 * u }, 2.4f * u, 0.6f);
     return img;
 }

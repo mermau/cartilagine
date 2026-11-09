@@ -92,6 +92,16 @@ casa) mantengono il circuito di Gwinn e cambiano il pannello in modo molto simil
 - Alimentazione: quasi sempre un 9 V unico (con pompa di carica o massa virtuale) al posto delle
   due PP3, e spesso TL072 al posto dei 741. In questo plugin restano i 741 dell'articolo.
 
+### Confronto con il progetto di gaussmarkov e stobiepole (2007)
+
+Il layout per stripboard/PCB di gaussmarkov.net riprende l'articolo con gli stessi valori di tutte le
+resistenze e i condensatori; cambiano solo i semiconduttori con equivalenti più facili da trovare:
+TR1 2N3906 al posto del BC187 (PNP simili, VR2 compensa), D1/D2 1N34A al posto degli OA47 (germanio,
+un po' più di perdita: l'LFO a SPEED zero resta leggermente più veloce), LM741. SHAPE, OFFSET, BIAS
+e LEVEL sono trimmer sulla scheda, come nell'originale: sul pannello restano SPEED, DEPTH, S1 e il
+DPDT FILTER/ENVELOPE. Lo schema conferma il verso di D1 e D2, C8 "flottante" in ENVELOPE e il cablaggio
+di S1 usati nel modello.
+
 ## Il circuito, stadio per stadio
 
 - **LFO**: IC1 integra la corrente che arriva dal cursore di VR1 (tra 0 e −9 V) attraverso R1 56k.
@@ -182,7 +192,6 @@ I test girano tutti su GitHub:
 ## Grafica e caratteri
 
 Interfaccia ispirata ai Gristleizer autocostruiti: scatola grigio chiaro verniciata a polvere,
-serigrafia nera, manopole nere zigrinate, LED rossi, deviatore VCA/VCF. Nome, scritte e la
-"scintilla" (un dente di sega spezzato, cioè la rampa dell'LFO) sono propri: il logo e lo slogan dei
-Throbbing Gristle non sono riprodotti. Caratteri: Archivo Black (SIL OFL), Yellowtail (Apache 2.0),
+serigrafia nera, manopole nere zigrinate, LED rossi, deviatore VCA/VCF, il riquadro bianco con il nome
+attraversato dal fulmine e "Industrial music for industrial people". Caratteri: Archivo Black (SIL OFL), Yellowtail (Apache 2.0),
 licenze in `resources/fonts/`. Uso personale e non commerciale.

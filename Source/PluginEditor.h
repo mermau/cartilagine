@@ -119,7 +119,7 @@ public:
     static constexpr float modeX  = 254.0f, modeY  = 222.0f;
     static constexpr float rateLedX = 34.0f, rateLedY = 266.0f;
     static constexpr float inX    = 116.0f, inY    = 474.0f;
-    static constexpr float inLedX = 58.0f,  inLedY = 452.0f;
+    static constexpr float inLedX = 46.0f,  inLedY = 462.0f;
     static constexpr float knobSize = 86.0f, switchSize = 58.0f;
 
 private:
