@@ -40,7 +40,14 @@ sui passaggi veloci.
 Livelli reali: 0 dBFS in ingresso corrisponde a 1 V di picco. Il circuito è "caldo": IC4 amplifica 11
 volte e IC5 ancora 10 (VCA) o 23,5 (centro del filtro), quindi con la chitarra a pieno volume i 741
 saturano. È il suono dell'originale. VR6 (LEVEL) è tarato perché l'effetto esca circa al
-livello del segnale diretto, come chiede l'articolo.
+livello del segnale diretto, come chiede l'articolo. Siccome IC5 satura a ±8 V, l'effetto non supera
+circa −6 dBFS di picco: alzando INPUT aumenta la distorsione, non il volume; per il volume usa OUTPUT
+(o VR6 nel pannello interno).
+
+**Applicazione autonoma**: JUCE la avvia con l'ingresso audio silenziato (contro il feedback);
+CARTILAGINE lo riattiva da sé all'apertura. Se senti solo la chitarra diretta, controlla in
+*Options → Audio/MIDI Settings* l'ingresso giusto e che "Mute audio input" sia spento, e disattiva
+il monitoraggio diretto della scheda audio.
 
 ## Interno (pulsante INTERNO)
 
@@ -63,7 +70,7 @@ livello del segnale diretto, come chiede l'articolo.
 | VR2 | forma d'onda su "triangolo", miglior triangolo: estremi uguali, quindi nessun salto quando la rampa torna indietro | 64,7 % |
 | VR3 | 0 V di media all'uscita di IC3 | 27,8 % |
 | VR5 | FILTER, DEPTH al massimo: spazzata piena e regolare, da ~340 Hz (JFET interdetto) a ~2,2 kHz | 11,5 % |
-| VR6 | effetto allo stesso volume del segnale diretto (note pizzicate, ENVELOPE e FILTER) | 4 % (−28 dB) |
+| VR6 | effetto allo stesso volume del segnale diretto (DI di chitarra tra −20 e −6 dBFS, ENVELOPE e FILTER) | 6,3 % (−24 dB) |
 
 `tests/circuit_test.cpp` rifà la taratura di VR2 e VR3 e controlla che coincida con quella del plugin.
 

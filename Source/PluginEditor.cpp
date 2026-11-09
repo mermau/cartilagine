@@ -1,5 +1,8 @@
 #include "PluginEditor.h"
 #include "BinaryData.h"
+#if defined (JucePlugin_Build_Standalone) && JucePlugin_Build_Standalone
+ #include <juce_audio_plugin_client/Standalone/juce_StandaloneFilterWindow.h>
+#endif
 #include <cstdint>
 
 namespace
@@ -782,6 +785,15 @@ GristleEditor::GristleEditor (GristleProcessor& p)
 
     timerCallback();
     startTimerHz (30);
+
+   #if defined (JucePlugin_Build_Standalone) && JucePlugin_Build_Standalone
+    // l'applicazione autonoma di JUCE parte con l'ingresso audio silenziato (contro il feedback):
+    // per un pedale l'ingresso è tutto, quindi lo riattiva a ogni apertura (resta disattivabile
+    // da Options -> Audio/MIDI Settings)
+    if (proc.wrapperType == juce::AudioProcessor::wrapperType_Standalone)
+        if (auto* holder = juce::StandalonePluginHolder::getInstance())
+            holder->getMuteInputValue().setValue (false);
+   #endif
 }
 
 GristleEditor::~GristleEditor()

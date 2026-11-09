@@ -126,7 +126,7 @@ struct Trim
     static constexpr double vr2 = 0.6472;   // TRIANGLE SHAPING: estremi del triangolo uguali
     static constexpr double vr3 = 0.2783;   // TRIANGLE OFFSET: 0 V di media all'uscita di IC3
     static constexpr double vr5 = 0.1150;   // SET BIAS: FILTER, DEPTH al massimo, spazzata da ~340 Hz a ~2,2 kHz
-    static constexpr double vr6 = 0.0400;   // LEVEL: effetto allo stesso volume del segnale diretto (−28 dB)
+    static constexpr double vr6 = 0.0630;   // LEVEL: effetto allo stesso volume del segnale diretto (−24 dB)
 };
 
 //==============================================================================
