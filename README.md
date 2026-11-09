@@ -9,6 +9,8 @@ forme d'onda e due trattamenti si ottengono gli "otto effetti di base" dell'arti
 
 ![CARTILAGINE](screenshot.png)
 
+Il manuale d'uso per musicisti è in [docs/manuale/CARTILAGINE-Manuale-d-uso.pdf](docs/manuale/CARTILAGINE-Manuale-d-uso.pdf) ed è incluso nello zip di ogni release (si rigenera con `python3 docs/manuale/build.py`).
+
 ## Comandi
 
 Il pannello segue i Gristleizer autocostruiti di oggi: BIAS e LEVEL, che sull'originale erano

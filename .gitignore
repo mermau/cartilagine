@@ -4,3 +4,4 @@ dist/
 *.zip
 build-*/
 demo_*.wav
+docs/manuale/manuale.html

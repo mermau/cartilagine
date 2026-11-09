@@ -34,6 +34,10 @@ int main (int argc, char** argv)
     std::unique_ptr<juce::AudioProcessorEditor> ed (proc.createEditor());
     ed->setSize (GristleEditor::baseW * 2, GristleEditor::baseH * 2);
     save (ed->createComponentSnapshot (ed->getLocalBounds(), true, 1.0f), "screenshot.png");
+    // per il manuale: solo il pedale, a 3x
+    ed->setSize (GristleEditor::baseW * 3, GristleEditor::baseH * 3);
+    save (ed->createComponentSnapshot ({ 0, 96 * 3, GristleEditor::baseW * 3, (GristleEditor::baseH - 96) * 3 }, true, 1.0f), "pedale_3x.png");
+    ed->setSize (GristleEditor::baseW * 2, GristleEditor::baseH * 2);
 
     for (auto* c : ed->getChildren())
         if (auto* b = dynamic_cast<juce::TextButton*> (c); b != nullptr && b->getButtonText() == "INTERNO")

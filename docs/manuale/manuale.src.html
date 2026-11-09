@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Cartilagine, manuale d'uso</title>
+<style>
+@font-face { font-family: "Archivo"; src: url("fonts/Archivo.ttf"); font-weight: 100 900; font-stretch: 62% 125%; font-style: normal; }
+@font-face { font-family: "Archivo"; src: url("fonts/Archivo-Italic.ttf"); font-weight: 100 900; font-stretch: 62% 125%; font-style: italic; }
+@font-face { font-family: "Archivo Black"; src: url("fonts/ArchivoBlack-Regular.ttf"); }
+@font-face { font-family: "Yellowtail"; src: url("../../resources/fonts/Yellowtail-Regular.ttf"); }
+
+:root {
+  --coat: #B8BCBF;        /* verniciatura a polvere del pedale */
+  --coat-deep: #9A9EA2;
+  --ink: #000000;         /* serigrafia */
+  --paper: #FFFFFF;
+  --panel: #ECEDEE;       /* riquadri di nota */
+  --rule: #C9CCCF;
+  --caption: #5E6266;
+  --led: #E3271B;         /* il LED rosso */
+}
+
+@page {
+  size: A4;
+  margin: 20mm 17mm 19mm 17mm;
+  @bottom-left  { content: "Cartilagine, manuale d'uso"; font: 400 7.5pt "Archivo"; font-stretch: 110%; color: #5E6266; }
+  @bottom-right { content: counter(page); font: 400 8pt "Archivo Black"; color: #000; }
+}
+@page cover { margin: 0; @bottom-left { content: none; } @bottom-right { content: none; } }
+@page back  { margin: 0; @bottom-left { content: none; } @bottom-right { content: none; } }
+
+* { box-sizing: border-box; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body {
+  margin: 0; color: var(--ink); background: var(--paper);
+  font-family: "Archivo", sans-serif; font-stretch: 100%; font-weight: 400;
+  font-size: 9.5pt; line-height: 1.5; hyphens: auto;
+  font-feature-settings: "kern", "liga", "tnum";
+}
+p { margin: 0 0 0.6em; }
+strong, b { font-weight: 650; }
+em { font-style: italic; }
+a { color: inherit; text-decoration: none; }
+
+/* ---------- COPERTINA: il pannello del pedale, ingrandito ---------- */
+.cover {
+  page: cover; width: 210mm; height: 297mm; position: relative; overflow: hidden;
+  background: var(--coat) url(img/grana.jpg) 0 0 / 210mm 297mm no-repeat;
+}
+.cover .grain { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cover .led {
+  position: absolute; left: 22mm; top: 26mm; width: 5mm; height: 5mm; border-radius: 50%;
+  background: radial-gradient(circle at 38% 34%, #ff9a8c 0 18%, var(--led) 45%, #8a0f08 100%);
+  box-shadow: 0 0 0 1.1mm #d9dbdd, 0 0 0 1.5mm #7d8185, 0 0 7mm 2mm rgba(227,39,27,.55);
+}
+.cover .ledlabel { position: absolute; left: 31mm; top: 25.6mm; font: 400 8.5pt "Archivo"; font-stretch: 112%; }
+.cover .namebox { z-index: 1;
+  position: absolute; left: 16mm; right: 16mm; top: 104mm; height: 50mm;
+  background: #F3F3F1; border: 2.2mm solid var(--ink);
+}
+.cover .namebox h1 {
+  position: absolute; left: 10mm; bottom: 7mm; margin: 0;
+  font: 400 56pt/1 "Archivo Black"; letter-spacing: -1pt;
+}
+.cover .bolt { z-index: 2; position: absolute; right: 7mm; top: 76mm; width: 60mm; height: 107mm; fill: var(--ink); }
+.cover .slogan {
+  position: absolute; left: 18mm; top: 168mm;
+  font: 400 15pt/1.32 "Archivo Black"; letter-spacing: 1.6pt;
+}
+.cover .what {
+  position: absolute; left: 18mm; bottom: 22mm; width: 108mm;
+}
+.cover .what .t { font-size: 24pt; line-height: 1; font-weight: 800; font-stretch: 112%; margin: 0 0 3mm; }
+.cover .what p { font-size: 10pt; line-height: 1.4; margin: 0; }
+.cover .maker { position: absolute; right: 18mm; bottom: 20mm; text-align: right; }
+.cover .maker .script { font: 32pt/1 "Yellowtail"; }
+.cover .maker .fx { font: 400 8pt "Archivo Black"; letter-spacing: 3pt; margin-top: 1mm; }
+.cover .maker .ver { font-size: 8pt; margin-top: 3mm; color: #2b2e31; }
+
+/* ---------- CAPITOLI ---------- */
+.chapter { break-before: page; }
+.head { display: grid; grid-template-columns: 36mm 1fr; column-gap: 7mm; align-items: end; margin: 0 0 8mm; }
+.head .no { font: 300 54pt/0.8 "Archivo"; font-stretch: 62%; }
+.head .box { border: .8mm solid var(--ink); padding: 3.2mm 4.5mm 2.6mm; }
+.head h2 { margin: 0; font: 400 22pt/1.04 "Archivo Black"; letter-spacing: -.3pt; text-wrap: balance; hyphens: manual; }
+.head .lead { grid-column: 2; margin-top: 4.5mm; font-size: 11.5pt; line-height: 1.42; max-width: 128mm; }
+
+h3 { margin: 6mm 0 1.6mm; font-size: 12pt; line-height: 1.2; font-weight: 760; font-stretch: 116%; break-after: avoid; }
+h4 { margin: 4mm 0 1mm; font-size: 9.8pt; font-weight: 700; break-after: avoid; }
+
+.row { display: grid; grid-template-columns: 36mm 1fr; column-gap: 7mm; }
+.row > .side { font-size: 7.8pt; line-height: 1.42; color: var(--caption); padding-top: 1mm; }
+.row > .side b { color: var(--ink); }
+.row > .main { max-width: 129mm; }
+.full { margin-left: 43mm; max-width: 129mm; }
+
+.note {
+  background: var(--panel); padding: 3.2mm 4mm; margin: 3mm 0 4mm; font-size: 9pt; break-inside: avoid;
+  border-left: 1.2mm solid var(--ink);
+}
+.note p:last-child { margin: 0; }
+.note.led { border-left-color: var(--led); }
+
+blockquote { margin: 5mm 0; padding: 0; font-size: 14.5pt; line-height: 1.22; font-weight: 650; font-stretch: 108%; }
+blockquote cite { display: block; margin-top: 2mm; font-size: 8pt; font-weight: 400; font-style: normal; font-stretch: 100%; color: var(--caption); }
+
+/* linea del tempo */
+.timeline { list-style: none; margin: 1mm 0 0; padding: 0; }
+.timeline li { display: grid; grid-template-columns: 15mm 1fr; column-gap: 4mm; padding: 1.8mm 0; border-top: .25mm solid var(--rule); break-inside: avoid; }
+.timeline li:last-child { border-bottom: .25mm solid var(--rule); }
+.timeline .y { font: 400 10pt/1.3 "Archivo Black"; }
+
+/* tabelle */
+table { border-collapse: collapse; width: 100%; margin: 2mm 0 4mm; font-size: 8.8pt; break-inside: avoid; }
+th { text-align: left; font-weight: 700; font-stretch: 108%; border-bottom: .5mm solid var(--ink); padding: 1.4mm 2mm 1.4mm 0; vertical-align: bottom; }
+td { border-bottom: .25mm solid var(--rule); padding: 1.4mm 2mm 1.4mm 0; vertical-align: top; }
+td.n, th.n { text-align: right; padding-right: 0; padding-left: 2mm; white-space: nowrap; }
+table.compact td, table.compact th { padding-top: .9mm; padding-bottom: .9mm; }
+table.num { font-size: 8pt; }
+table.num td:first-child, table.num th:first-child { white-space: nowrap; padding-right: 1mm; }
+table.num td.n, table.num th.n { padding-left: 1.2mm; }
+
+/* pannello con richiami */
+.panelfig { display: grid; grid-template-columns: 74mm 1fr; column-gap: 8mm; align-items: start; }
+.panelfig .img { position: relative; width: 74mm; }
+.panelfig .img img { width: 74mm; display: block; filter: drop-shadow(0 1.2mm 1.6mm rgba(0,0,0,.28)); }
+.pin {
+  position: absolute; width: 5.2mm; height: 5.2mm; margin: -2.6mm 0 0 -2.6mm; border-radius: 50%;
+  background: var(--led); color: #fff; font: 400 7pt/5.2mm "Archivo Black"; text-align: center;
+  box-shadow: 0 0 0 .5mm #fff;
+}
+.legend { list-style: none; margin: 0; padding: 0; counter-reset: c; }
+.legend li { position: relative; padding: 0 0 2.6mm 8mm; break-inside: avoid; }
+.legend li::before {
+  counter-increment: c; content: counter(c); position: absolute; left: 0; top: .2mm;
+  width: 5mm; height: 5mm; border-radius: 50%; background: var(--led); color: #fff;
+  font: 400 6.8pt/5mm "Archivo Black"; text-align: center;
+}
+.legend b { font-weight: 700; }
+
+/* le otto combinazioni */
+.grid8 { display: grid; grid-template-columns: 22mm 1fr 1fr; border-top: .5mm solid var(--ink); margin: 2mm 0 4mm; font-size: 8.7pt; }
+.grid8 > div { border-bottom: .25mm solid var(--rule); padding: 2mm 3mm 2mm 0; }
+.grid8 .hd { font-weight: 700; font-stretch: 110%; border-bottom: .5mm solid var(--ink); }
+.grid8 .w svg { width: 14mm; height: 5mm; stroke: var(--ink); fill: none; stroke-width: 1.4; }
+.grid8 .w span { display: block; font-size: 7.6pt; color: var(--caption); margin-top: .5mm; }
+
+/* ricette */
+.recipe { break-inside: avoid; border-top: .5mm solid var(--ink); padding: 3mm 0 4mm; display: grid; grid-template-columns: 36mm 1fr; column-gap: 7mm; }
+.recipe h3 { margin: 0 0 1.5mm; font: 400 12pt/1.15 "Archivo Black"; }
+.recipe .src { font-size: 7.8pt; color: var(--caption); }
+.knobs { display: flex; flex-wrap: wrap; gap: 1mm 3mm; margin: 1mm 0 2.4mm; }
+.kn { margin: 0; width: 15mm; text-align: center; }
+.kn svg { width: 15mm; height: 14mm; display: block; }
+.kn .tk { stroke: var(--ink); stroke-width: 1; }
+.kn .body { fill: var(--ink); }
+.kn .ptr { stroke: #fff; stroke-width: 2.2; stroke-linecap: round; }
+.kn figcaption { font-size: 6.6pt; line-height: 1.15; }
+.kn figcaption b { display: block; font-weight: 700; font-stretch: 112%; }
+.wv path.off { stroke: var(--caption); stroke-width: 1; fill: none; }
+.wv path.on { stroke: var(--led); stroke-width: 1.8; fill: none; }
+.wv path.big { stroke: var(--ink); stroke-width: 2.4; fill: none; stroke-linejoin: miter; }
+.sw .nut { fill: #c9ccd0; stroke: var(--ink); stroke-width: 1; }
+.sw .lever { stroke: var(--ink); stroke-width: 3.2; stroke-linecap: round; }
+.sw .tip { fill: var(--ink); }
+.sw text { font: 400 7.5px "Archivo Black"; }
+.sw text.off { fill: #a5a8ab; }
+
+/* figure */
+figure.shot { margin: 2mm 0 4mm; break-inside: avoid; }
+figure.shot img { display: block; width: 100%; }
+figure.shot figcaption { font-size: 7.8pt; color: var(--caption); margin-top: 1.6mm; }
+
+/* schema del segnale */
+.flow { width: 100%; height: auto; margin: 0 0 7mm; }
+.flow text { font-family: "Archivo"; font-size: 9px; }
+.flow .t { font-family: "Archivo Black"; font-size: 9.5px; }
+
+.bolt-small { width: 9mm; height: 16mm; fill: var(--ink); float: right; margin: -2mm 0 0 4mm; }
+
+/* retro */
+.back { page: back; break-before: page; width: 210mm; height: 297mm; position: relative; background: var(--ink); color: #fff; overflow: hidden; }
+.back .inner { position: absolute; left: 18mm; right: 18mm; bottom: 22mm; font-size: 8.4pt; line-height: 1.5; }
+.back .inner p { max-width: 128mm; color: #c9ccd0; }
+.back .script { font: 30pt/1 "Yellowtail"; color: #fff; }
+.back .fx { font: 400 8pt "Archivo Black"; letter-spacing: 3pt; margin: 1mm 0 8mm; }
+.back .bolt { position: absolute; right: 20mm; top: 24mm; width: 40mm; height: 72mm; fill: var(--coat); }
+
+.cols2 { columns: 2; column-gap: 7mm; }
+.cols2 > * { break-inside: avoid; }
+.small { font-size: 8.2pt; }
+.sources { font-size: 8pt; line-height: 1.45; padding-left: 4mm; }
+.sources li { margin-bottom: 1.2mm; }
+.sources span { color: var(--caption); }
+</style>
+</head>
+<body>
+
+<!-- ============================== COPERTINA ============================== -->
+<section class="cover">
+  <div class="led"></div><div class="ledlabel">speed</div>
+  <bolt/>
+  <div class="namebox"><h1>Cartilagine</h1></div>
+  <div class="slogan">INDUSTRIAL<br>MUSIC FOR<br>INDUSTRIAL<br>PEOPLE</div>
+  <div class="what">
+    <div class="t">Manuale d'uso</div>
+    <p>Emulazione del Gristleizer, il modulatore a tensione di controllo dei Throbbing Gristle.
+    Plugin VST3, Audio Unit e applicazione autonoma per macOS.</p>
+  </div>
+  <div class="maker"><div class="script">Collateral</div><div class="fx">EFFECTS</div><div class="ver">Versione 1.2</div></div>
+</section>
+
+<!-- ============================== 1. STORIA ============================== -->
+<section class="chapter">
+  <div class="head"><div class="no">1</div><div class="box"><h2>Un progetto da rivista diventato un suono</h2></div>
+    <p class="lead">Il Gristleizer nasce come montaggio per dilettanti su una rivista di elettronica inglese. In mano ai Throbbing Gristle diventa uno degli attrezzi che definiscono la musica industriale.</p></div>
+
+  <div class="row"><div class="side"><b>Practical Electronics</b>, luglio 1975. Il progetto si chiamava semplicemente <i>Guitar Effects Pedal</i>.</div><div class="main">
+    <h3>Il Guitar Effects Pedal</h3>
+    <p>Nel luglio 1975 <em>Practical Electronics</em> pubblica il progetto di Roy Gwinn, che allora aveva sedici anni: un pedale per chitarra a batterie che contiene un oscillatore lento (LFO) con quattro forme d'onda e lo usa per comandare, a scelta, un filtro o un amplificatore a guadagno variabile. Con quattro forme d'onda e due trattamenti, l'articolo prometteva otto effetti di base e un'infinità di varianti. Il circuito si vendeva anche in kit, circuito stampato e componenti, prodotto in Inghilterra da Phonosonics.</p>
+    <p>Per l'epoca era una macchina insolita: non un tremolo, non un wah, ma un piccolo sintetizzatore modulare cablato dentro una scatola, che lavora su qualsiasi segnale gli si mandi.</p>
+  </div></div>
+
+  <div class="row"><div class="side"><b>Throbbing Gristle</b>: Genesis P-Orridge (voce e basso), Cosey Fanni Tutti (chitarra e tromba), Chris Carter (sintetizzatori ed elettronica), Peter "Sleazy" Christopherson (nastri).</div><div class="main">
+    <h3>Il Gristleizer</h3>
+    <p>Nel 1977 Chris Carter, il tecnico e sintesista dei Throbbing Gristle, monta il kit Phonosonics, ci aggiunge modifiche sue, disegna una scatola completamente nuova e ne costruisce una decina di esemplari per sé, per il gruppo e per qualche amico. Porta sul pannello il trimmer della polarizzazione, il BIAS, che nel progetto originale stava dentro la scatola. Il nome, Gristleizer, viene dal gruppo.</p>
+    <p>Ogni componente del gruppo ne aveva almeno uno, Genesis P-Orridge e Carter due. Nella catena di effetti di ciascuno il Gristleizer veniva per primo, seguito da un Eventide Harmonizer e da un'eco a nastro. Carter ricorda che lo usavano su quasi tutto: sintetizzatori, chitarra, basso, violino, nastri, ritmi e la voce di Genesis.</p>
+    <blockquote>All'epoca non esisteva un altro effetto a batterie capace di una gamma di suoni così ampia e strana.<cite>Chris Carter, parafrasato dall'intervista di MusicRadar</cite></blockquote>
+    <p>Nei dischi del gruppo, dal 1977 allo scioglimento del 1981, il Gristleizer dà filtri che respirano lentamente, effetti vicini alla modulazione ad anello, distorsioni frizzanti quando lo si spinge e tremoli che tagliano il suono a fette. "Industrial music for industrial people" era lo slogan della loro etichetta, Industrial Records: per questo è serigrafato sul pannello.</p>
+  </div></div>
+
+  <div class="row"><div class="side">Le date vengono dalle fonti elencate a pagina <b>15</b>.</div><div class="main">
+    <h3>Dopo i Throbbing Gristle</h3>
+    <ul class="timeline">
+      <li><span class="y">1975</span><span>Roy Gwinn pubblica il Guitar Effects Pedal su <em>Practical Electronics</em>.</span></li>
+      <li><span class="y">1977</span><span>Chris Carter costruisce i Gristleizer dai kit Phonosonics, con BIAS sul pannello e una scatola nuova.</span></li>
+      <li><span class="y">1981</span><span>I Throbbing Gristle si sciolgono. Carter e Cosey Fanni Tutti continuano come Chris &amp; Cosey.</span></li>
+      <li><span class="y">2007</span><span>Lo schema dell'articolo circola in rete; gaussmarkov e stobiepole pubblicano un circuito stampato fedele all'originale per chi vuole costruirselo.</span></li>
+      <li><span class="y">2009</span><span>Esce una riedizione presentata al concerto dei Throbbing Gristle a Chicago, ad aprile; poi arrivano i Gristleizer a pedale e a modulo di Endangered Audio Research.</span></li>
+      <li><span class="y">2017</span><span>Future Sound Systems, con Chris Carter e Roy Gwinn, divide il circuito in quattro moduli Eurorack: oscillatore, filtro, VCA e preamplificatore.</span></li>
+    </ul>
+    <p style="margin-top:4mm">Le versioni autocostruite di oggi riprendono quasi tutte la stessa idea di Carter: BIAS e LEVEL sul pannello, un LED che lampeggia con l'oscillatore, un deviatore VCA/VCF e un solo interruttore a pedale. Cartilagine segue questa strada.</p>
+  </div></div>
+</section>
+
+<!-- ============================== 2. IN BREVE ============================== -->
+<section class="chapter">
+  <div class="head"><div class="no">2</div><div class="box"><h2>Che cosa fa</h2></div>
+    <p class="lead">Un oscillatore lento muove un filtro o un amplificatore. Tutto il resto, il carattere aspro compreso, viene da come il circuito originale lo fa.</p></div>
+
+  <div class="full">
+    <svg class="flow" viewBox="0 0 520 150">
+      <defs><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#000"/></marker>
+      <marker id="ahr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#E3271B"/></marker></defs>
+      <g fill="#fff" stroke="#000" stroke-width="1.4">
+        <rect x="1" y="34" width="74" height="40"/>
+        <rect x="104" y="34" width="84" height="40"/>
+        <rect x="218" y="8" width="128" height="46"/><rect x="218" y="54" width="128" height="46"/>
+        <rect x="376" y="34" width="70" height="40"/>
+      </g>
+      <g fill="none" stroke="#000" stroke-width="1.4">
+        <path d="M75,54 H101" marker-end="url(#ah)"/><path d="M188,54 H215" marker-end="url(#ah)"/>
+        <path d="M346,54 H373" marker-end="url(#ah)"/><path d="M446,54 H512" marker-end="url(#ah)"/>
+      </g>
+      <rect x="218" y="118" width="128" height="30" fill="#ECEDEE"/>
+      <path d="M282,118 V103" stroke="#E3271B" stroke-width="1.6" marker-end="url(#ahr)"/>
+      <text x="38" y="51" text-anchor="middle" class="t">chitarra</text><text x="38" y="64" text-anchor="middle">o linea</text>
+      <text x="146" y="51" text-anchor="middle" class="t">ingresso</text><text x="146" y="64" text-anchor="middle">GAIN</text>
+      <text x="282" y="28" text-anchor="middle" class="t">VCF</text><text x="282" y="41" text-anchor="middle">filtro che si sposta</text>
+      <text x="282" y="74" text-anchor="middle" class="t">VCA</text><text x="282" y="87" text-anchor="middle">volume che si muove</text>
+      <text x="411" y="51" text-anchor="middle" class="t">LEVEL</text><text x="411" y="64" text-anchor="middle">volume</text>
+      <text x="480" y="46" text-anchor="middle">uscita</text>
+      <text x="282" y="131" text-anchor="middle" class="t">LFO</text><text x="282" y="143" text-anchor="middle">SPEED, forma d'onda, DEPTH, BIAS</text>
+      <text x="356" y="114" fill="#E3271B">muove il trattamento scelto</text>
+    </svg>
+  </div>
+
+  <div class="row"><div class="side">Il deviatore <b>VCA / VCF</b> sceglie uno dei due trattamenti: non lavorano mai insieme.</div><div class="main">
+    <p>Il segnale entra in uno stadio d'ingresso che lo amplifica fino a undici volte (GAIN) e poi passa da uno solo dei due trattamenti:</p>
+    <p><b>VCF</b>, un filtro passa-banda molto stretto e risonante, che l'oscillatore sposta su e giù tra circa 340 Hz e 2,8 kHz. Il risultato va dal wah meccanico al gorgoglio vocale.</p>
+    <p><b>VCA</b>, un amplificatore il cui guadagno segue l'oscillatore: tremolo, colpi ritmici, suoni che decadono al contrario, fino alla modulazione ad anello quando l'oscillatore va veloce.</p>
+    <p>L'oscillatore, a sua volta, ha quattro forme d'onda, una velocità da un ciclo ogni dieci secondi a circa novanta al secondo, e una profondità. Il BIAS sposta il punto attorno a cui l'oscillatore lavora: è la manopola che decide dove sta il filtro o quanto è aperto il VCA quando la modulazione è a zero.</p>
+    <div class="note"><p>Il circuito originale è "caldo": amplifica molto e satura presto. La saturazione non è un difetto da evitare, è metà del carattere del Gristleizer. Il plugin la riproduce com'è.</p></div>
+  </div></div>
+
+  <div class="row"><div class="side">Formati: <b>VST3</b>, <b>AU</b>, applicazione autonoma. macOS 11 o successivo, Apple Silicon e Intel.</div><div class="main">
+    <h3>Installazione e primo avvio</h3>
+    <p>Scarica lo zip dalla pagina <em>Releases</em> del progetto ed estrailo. Apri il Terminale, scrivi <b>xattr -dr com.apple.quarantine</b> seguito da uno spazio, trascina nella finestra la cartella <i>CARTILAGINE</i> e premi Invio. Poi fai doppio clic su <i>Installa CARTILAGINE.command</i> e inserisci la password. Riavvia la DAW: il plugin compare sotto <b>Collateral Effects</b>.</p>
+    <p>Mettilo su una traccia audio come un qualsiasi effetto. Il Gristleizer è mono: se la traccia è stereo e i due canali sono uguali usa il sinistro, se sono diversi li somma; in uscita il segnale è lo stesso sui due lati.</p>
+    <p>Con l'applicazione autonoma scegli in <i>Options, Audio/MIDI Settings</i> la scheda audio e l'ingresso a cui è collegata la chitarra. Spegni il monitoraggio diretto della scheda, altrimenti senti la chitarra pulita sotto l'effetto.</p>
+  </div></div>
+</section>
+
+<!-- ============================== 3. COMANDI ============================== -->
+<section class="chapter">
+  <div class="head"><div class="no">3</div><div class="box"><h2>Il pannello</h2></div>
+    <p class="lead">Sei manopole, un deviatore, un interruttore a pedale e due LED. Doppio clic su una manopola per tornare al valore di fabbrica; Maiusc mentre trascini per regolare fine.</p></div>
+
+  <div class="panelfig">
+    <div class="img"><img src="img/pedale_corpo.png" alt="Pannello di Cartilagine">
+      <span class="pin" style="left:24.2%;top:17.0%">1</span>
+      <span class="pin" style="left:46.4%;top:17.0%">2</span>
+      <span class="pin" style="left:68.8%;top:17.0%">3</span>
+      <span class="pin" style="left:91.3%;top:17.0%">4</span>
+      <span class="pin" style="left:28.2%;top:37.4%">5</span>
+      <span class="pin" style="left:58.0%;top:37.4%">6</span>
+      <span class="pin" style="left:69.5%;top:44%">7</span>
+      <span class="pin" style="left:15.1%;top:46.7%">8</span>
+      <span class="pin" style="left:42.2%;top:84.5%">9</span>
+      <span class="pin" style="left:18.8%;top:83.0%">10</span>
+    </div>
+    <ol class="legend">
+      <li><b>BIAS</b> sposta il punto di lavoro: in VCF la zona in cui si muove il filtro, in VCA il volume medio e quanto il segnale viene "sporcato". È la manopola più musicale del pedale; vedi la tabella nella pagina seguente.</li>
+      <li><b>DEPTH</b> quanto l'oscillatore muove il filtro o il volume. A zero l'effetto resta fermo al punto scelto con BIAS.</li>
+      <li><b>GAIN</b> quanto lo stadio d'ingresso amplifica, da 1 a 11 volte (a fondo corsa come l'originale). Più guadagno vuol dire più saturazione, non più volume.</li>
+      <li><b>LEVEL</b> il volume d'uscita dell'effetto. Usalo per pareggiare il suono trattato con quello diretto.</li>
+      <li><b>SPEED</b> la velocità dell'oscillatore, da circa 0,1 a 90 cicli al secondo, con curva logaritmica.</li>
+      <li><b>Forma d'onda</b> rampa che sale, rampa che scende, triangolo, quadra. Il simbolo scelto sul pannello si scurisce.</li>
+      <li><b>VCA / VCF</b> in alto il VCA, in basso il filtro. Commutando mentre suoni si sente un piccolo colpo, come sul pedale vero.</li>
+      <li><b>LED della velocità</b> si accende con la parte positiva della forma d'onda: con l'oscillatore lento fa da metronomo.</li>
+      <li><b>Bypass</b> effetto inserito o segnale diretto. Tornando su "inserito" l'oscillatore riparte dall'inizio della rampa.</li>
+      <li><b>LED dell'effetto</b> acceso quando l'effetto è inserito.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="chapter">
+  <div class="row"><div class="side">Valori misurati sul plugin con le batterie a 9 V.</div><div class="main">
+    <h3 style="margin-top:0">SPEED: quanto va veloce</h3>
+    <p>La curva è logaritmica: la prima metà della corsa copre i tempi musicali lenti, la seconda arriva alle frequenze udibili, dove l'effetto smette di sembrare una modulazione e diventa un timbro.</p>
+    <table class="compact num">
+      <tr><th>SPEED</th><th class="n">0</th><th class="n">1</th><th class="n">2</th><th class="n">3</th><th class="n">4</th><th class="n">5</th><th class="n">6</th><th class="n">7</th><th class="n">8</th><th class="n">9</th><th class="n">10</th></tr>
+      <tr><td>cicli al secondo</td><td class="n">0,1</td><td class="n">0,74</td><td class="n">1,7</td><td class="n">3,2</td><td class="n">5,5</td><td class="n">9,0</td><td class="n">14</td><td class="n">23</td><td class="n">35</td><td class="n">56</td><td class="n">90</td></tr>
+      <tr><td>un ciclo dura</td><td class="n">10 s</td><td class="n">1,3 s</td><td class="n">0,6 s</td><td class="n">320 ms</td><td class="n">180 ms</td><td class="n">110 ms</td><td class="n">70 ms</td><td class="n">44 ms</td><td class="n">28 ms</td><td class="n">18 ms</td><td class="n">11 ms</td></tr>
+    </table>
+    <p class="small">La frequenza esatta si legge nel pannello interno (capitolo 6), utile per mettere l'oscillatore a tempo con il brano.</p>
+
+    <h3>BIAS: dove lavora il filtro</h3>
+    <p>Con DEPTH a zero, BIAS da solo decide la frequenza del filtro in VCF e il guadagno del VCA. Fino a circa 1,5 il transistor che fa da resistenza variabile è chiuso: il filtro resta in basso e il VCA è al massimo, già saturo. Poi il filtro sale e il VCA si apre sempre meno.</p>
+    <table class="compact num">
+      <tr><th>BIAS</th><th class="n">0</th><th class="n">1</th><th class="n">2</th><th class="n">3</th><th class="n">4</th><th class="n">5</th><th class="n">6</th><th class="n">7</th><th class="n">8</th><th class="n">9</th><th class="n">10</th></tr>
+      <tr><td>filtro VCF, Hz</td><td class="n">340</td><td class="n">340</td><td class="n">990</td><td class="n">1.450</td><td class="n">1.760</td><td class="n">2.010</td><td class="n">2.210</td><td class="n">2.380</td><td class="n">2.530</td><td class="n">2.660</td><td class="n">2.780</td></tr>
+      <tr><td>guadagno VCA, dB</td><td class="n">+39</td><td class="n">+39</td><td class="n">+22</td><td class="n">+16</td><td class="n">+12</td><td class="n">+10</td><td class="n">+8</td><td class="n">+7</td><td class="n">+6</td><td class="n">+5</td><td class="n">+4</td></tr>
+    </table>
+    <p>Con DEPTH alzato, l'oscillatore si muove attorno a questo punto. La taratura di fabbrica (BIAS a 2,7) mette il centro della spazzata dove l'articolo consiglia: con DEPTH al massimo il filtro corre da 340 Hz a circa 2,2 kHz senza fermarsi.</p>
+    <div class="note led"><p><b>Il filtro è molto stretto</b>, circa 100 Hz di banda a qualsiasi frequenza. Su una nota singola si sente soprattutto quando il filtro passa sopra un'armonica: per questo l'effetto rende di più su accordi, note tenute e suoni ricchi come synth, batterie e voce.</p></div>
+  </div></div>
+</section>
+
+<!-- ============================== 4. OTTO EFFETTI ============================== -->
+<section class="chapter">
+  <div class="head"><div class="no">4</div><div class="box"><h2>Otto effetti di base</h2></div>
+    <p class="lead">Quattro forme d'onda per due trattamenti. Rampe che salgono e che scendono fanno cose opposte, e la differenza si sente subito.</p></div>
+
+  <div class="full">
+    <div class="grid8">
+      <div class="hd">Forma</div><div class="hd">VCF (filtro)</div><div class="hd">VCA (volume)</div>
+      <div class="w"><svg viewBox="0 0 44 16"><path d="M1,15 L11,1 L11,15 L22,1 L22,15 L33,1 L33,15 L43,1 L43,15"/></svg><span>rampa su</span></div>
+      <div>Il filtro sale lentamente e ricade di colpo: un "uaa" ripetuto. Veloce diventa un gorgoglio.</div>
+      <div>Il volume si chiude lentamente e si riapre di colpo: ogni ciclo è un attacco seguito da un decadimento. Veloce dà l'effetto mandolino.</div>
+      <div class="w"><svg viewBox="0 0 44 16"><path d="M1,15 L1,1 L11,15 L11,1 L22,15 L22,1 L33,15 L33,1 L43,15"/></svg><span>rampa giù</span></div>
+      <div>Il filtro scatta in alto e scende: "aau", simile a una sillaba pronunciata al contrario.</div>
+      <div>Il volume cresce lentamente e si interrompe: il suono sembra suonato al contrario, come un nastro rovesciato.</div>
+      <div class="w"><svg viewBox="0 0 44 16"><path d="M1,15 L6,1 L11,15 L16,1 L22,15 L27,1 L33,15 L38,1 L43,15"/></svg><span>triangolo</span></div>
+      <div>Il wah automatico più morbido. Molto lento funziona anche sui passaggi veloci, perché non segue le note.</div>
+      <div>Il tremolo classico, ampio. A SPEED alta diventa vibrazione e poi modulazione ad anello.</div>
+      <div class="w"><svg viewBox="0 0 44 16"><path d="M1,15 L1,1 L6,1 L6,15 L11,15 L11,1 L16,1 L16,15 L22,15 L22,1 L27,1 L27,15 L33,15 L33,1 L38,1 L38,15 L43,15"/></svg><span>quadra</span></div>
+      <div>Il filtro salta tra due posizioni: due vocali alternate, come un trillo di formanti.</div>
+      <div>Il suono acceso e spento: taglio ritmico, effetto elicottero. I fronti sono arrotondati dal circuito, quindi niente click.</div>
+    </div>
+  </div>
+
+  <div class="row"><div class="side">Dall'articolo originale: <i>"una rampa che decade veloce sul VCA dà un suono come di mandolino"</i>.</div><div class="main">
+    <h3>Come suonarlo</h3>
+    <p>Gli effetti sono ripetitivi per natura: rendono meglio su accordi tenuti e note lunghe, dove si sente l'effetto lavorare nel tempo. Sulle frasi veloci conviene un triangolo lento sul filtro, che colora senza imporre un ritmo.</p>
+    <p>Rampa e quadra hanno fronti ripidi. Il circuito li arrotonda un po' prima che arrivino al filtro e al VCA, ma a SPEED alta e DEPTH al massimo si sente comunque un ticchettio ritmico: fa parte del suono, non è un problema del plugin.</p>
+    <p>Sopra SPEED 7 l'oscillatore entra nel campo udibile. In VCA il segnale viene moltiplicato per un'onda a decine di cicli al secondo e nascono frequenze nuove sopra e sotto ogni nota, come in un modulatore ad anello. In VCF il filtro vibra così in fretta da trasformarsi in un timbro metallico.</p>
+  </div></div>
+</section>
+
+<!-- ============================== 5. BARRA DI SERVIZIO ============================== -->
+<section class="chapter">
+  <div class="head"><div class="no">5</div><div class="box"><h2>La barra di servizio</h2></div>
+    <p class="lead">La fascia scura in alto non fa parte del pedale: serve ad adattarlo alla chitarra, alla scheda audio e alla tastiera MIDI.</p></div>
+
+  <div class="row"><div class="side"><figure class="shot" style="margin:0"><img src="img/gui.png" alt="Interfaccia completa"><figcaption>L'interfaccia completa.</figcaption></figure></div><div class="main">
+    <h4 style="margin-top:0">INPUT e OUTPUT</h4>
+    <p>Correggono il livello prima e dopo il pedale, da −24 a +24 dB. Il plugin considera 0 dBFS in ingresso come 1 V di picco, cioè un pick-up forte: una chitarra registrata pulita con picchi tra −20 e −6 dBFS arriva al pedale come una chitarra vera. Se la tua DI è molto bassa alza INPUT, non GAIN.</p>
+    <h4>PICKUP e VOLUME</h4>
+    <p>L'ingresso del Gristleizer è "pesante" per un pick-up passivo: lo carica e gli toglie un po' di acuti, soprattutto ai single coil. Scegli il tipo di pick-up della chitarra che hai registrato e il plugin ricostruisce questa interazione, partendo da una DI registrata normalmente. Il VOLUME della chitarra agisce prima del pedale, come la manopola sulla chitarra: abbassarlo pulisce la saturazione e cambia il colore.</p>
+    <p><b>Ideale</b> e <b>Linea / synth</b> sono per sorgenti che non sono pick-up passivi: synth, drum machine, voce, loop, chitarre attive. In questi casi il VOLUME non ha effetto.</p>
+    <h4>Le mie chitarre</h4>
+    <p>Con <b>Personalizzato</b> inserisci resistenza e induttanza del tuo pick-up (dati del costruttore). Il pulsante con i tre puntini le salva con il nome della chitarra; le chitarre salvate negli altri pedali Collateral Effects compaiono già nell'elenco.</p>
+    <h4>Display MIDI e INTERNO</h4>
+    <p>Il display mostra da dove arrivano i comandi MIDI e l'ultimo controllo ricevuto; un clic sceglie la porta (capitolo 7). INTERNO apre la scatola (capitolo 6).</p>
+  </div></div>
+</section>
+
+<!-- ============================== 6. INTERNO ============================== -->
+<section class="chapter">
+  <div class="head"><div class="no">6</div><div class="box"><h2>Dentro la scatola</h2></div>
+    <p class="lead">Quello che sul pedale vero richiede un cacciavite e un oscilloscopio. Non serve toccarlo per suonare, ma aiuta a capire e a personalizzare.</p></div>
+
+  <div class="row"><div class="side"><figure class="shot" style="margin:0"><img src="img/interno.png" alt="Pannello interno"><figcaption>Il pannello interno.</figcaption></figure></div><div class="main">
+    <h4 style="margin-top:0">Oscilloscopio</h4>
+    <p>Mostra la forma d'onda che arriva a DEPTH, con la frequenza dell'oscillatore misurata. La finestra si adatta alla velocità: si vedono sempre circa due cicli.</p>
+    <h4>Spazzata misurata</h4>
+    <p>Sotto l'oscilloscopio il plugin scrive dove sta lavorando: in VCF la frequenza più bassa e più alta del filtro nell'ultimo secondo e mezzo, in VCA il guadagno minimo e massimo. Se compare "gate al limite", BIAS è così alto che il filtro si ferma in cima; "JFET interdetto" vuol dire che per un tratto il filtro resta fermo in basso. Sono indicazioni, non errori: a volte è proprio il suono che si cerca.</p>
+    <h4>Triangle shaping e triangle offset</h4>
+    <p>Due trimmer che regolano il triangolo: il primo sposta la punta e fa in modo che le estremità coincidano, il secondo lo centra. Di fabbrica sono tarati come dice l'articolo. Spostarli rende il triangolo asimmetrico, una via di mezzo tra triangolo e rampa.</p>
+    <h4>Batterie</h4>
+    <p>Il pedale vero funzionava con due batterie da 9 V. Scaricandosi cambia tutto un po': l'oscillatore rallenta, il punto di lavoro si sposta e la saturazione arriva prima. Abbassa la tensione per il suono "a fine batteria".</p>
+    <h4>2N3819</h4>
+    <p>Il transistor che fa da resistenza variabile cambiava molto da un esemplare all'altro. Qui puoi sceglierne la caratteristica: spostandola si sposta tutta la spazzata e va ritoccato BIAS, come quando si cambiava il componente sul pedale.</p>
+    <h4>RUMORE</h4>
+    <p>Aggiunge il soffio dei circuiti integrati e delle resistenze, al livello del pedale vero. È spento di serie: acceso, il plugin non si ferma mai nel silenzio e consuma un po' di più.</p>
+    <h4>TARATURA ORIGINALE</h4>
+    <p>Riporta trimmer, BIAS, GAIN, LEVEL, batterie e transistor ai valori di fabbrica.</p>
+  </div></div>
+</section>
+
+<!-- ============================== 7. MIDI ============================== -->
+<section class="chapter">
+  <div class="head"><div class="no">7</div><div class="box"><h2>Tastiera MIDI e automazione</h2></div>
+    <p class="lead">Ogni manopola e ogni interruttore si comanda da una tastiera controller. Il plugin è pensato per l'Arturia KeyLab, ma va bene qualsiasi controller che mandi CC.</p></div>
+
+  <div class="row"><div class="side">Ableton Live non passa i CC agli effetti VST3 e gli effetti AU non ricevono MIDI: per questo il plugin apre la porta da sé.</div><div class="main">
+    <h3 style="margin-top:0">La porta della tastiera</h3>
+    <p>Fai clic sul display MIDI in alto e scegli la porta della tastiera, per esempio <i>KeyLab mkII 61 MIDI</i>. Il plugin la apre direttamente: non servono tracce MIDI né instradamenti, e funziona in qualsiasi DAW. Se la KeyLab è collegata quando apri il plugin viene scelta da sola (la porta "MIDI", non quella "DAW").</p>
+    <p>Con <b>Dalla DAW</b> il plugin usa invece i CC che la DAW gli passa: è la scelta giusta se instradi una traccia MIDI sul plugin in una DAW che lo permette.</p>
+
+    <h3>Comandi predefiniti</h3>
+    <table class="compact">
+      <tr><th>Comando</th><th>CC</th><th>Sulla KeyLab mkII (modalità User)</th></tr>
+      <tr><td>SPEED</td><td>74</td><td>encoder 1</td></tr>
+      <tr><td>DEPTH</td><td>71</td><td>encoder 2</td></tr>
+      <tr><td>Forma d'onda</td><td>76</td><td>encoder 3, in quattro zone</td></tr>
+      <tr><td>BIAS</td><td>77</td><td>encoder 4</td></tr>
+      <tr><td>GAIN</td><td>93</td><td>encoder 5</td></tr>
+      <tr><td>LEVEL</td><td>18</td><td>encoder 6</td></tr>
+      <tr><td>Bypass</td><td>64</td><td>pedale del sustain</td></tr>
+      <tr><td>VCA / VCF</td><td>65</td><td>un pulsante o un secondo pedale</td></tr>
+    </table>
+    <p>Bypass e VCA/VCF commutano a ogni pressione. Imposta i pulsanti della KeyLab come momentanei (<i>Gate</i>) in Arturia MIDI Control Center: in modalità <i>Toggle</i> servirebbero due pressioni.</p>
+
+    <h3>MIDI Learn</h3>
+    <p>Clic destro su un comando, <b>MIDI Learn</b>, poi muovi il controllo che vuoi usare: il comando si illumina finché non riceve il CC. Dallo stesso menu si toglie l'assegnazione o si torna alla mappatura della KeyLab. Funziona anche per i comandi della barra di servizio e del pannello interno. La mappatura viene salvata con il progetto.</p>
+
+    <h3>Automazione</h3>
+    <p>Tutti i comandi sono parametri del plugin e si possono automatizzare nella DAW. Restano possibili anche la mappatura MIDI di Live (Cmd+M) e quella dei controller di Logic (Cmd+K). Automatizzare BIAS con DEPTH a zero trasforma il filtro in un wah che controlli tu, nota per nota.</p>
+  </div></div>
+</section>
+
+<!-- ============================== 8. RICETTE ============================== -->
+<section class="chapter">
+  <div class="head"><div class="no">8</div><div class="box"><h2>Ricette</h2></div>
+    <p class="lead">Punti di partenza, non preset. I valori sono quelli delle manopole sul pannello, da 0 a 10; GAIN a 10 è il guadagno originale.</p></div>
+
+  <div class="recipe"><div><h3>Mandolino</h3><p class="src">Dall'articolo del 1975.</p></div><div>
+    <knobs>SPEED=6.5 DEPTH=10 BIAS=2.7 GAIN=8 LEVEL=8 WAVE=0 MODE=VCA</knobs>
+    <p>Ogni ciclo della rampa riattacca il suono e lo lascia decadere: una nota tenuta diventa un tremolo a plettro. Più SPEED, più veloce la plettrata. Funziona bene su accordi arpeggiati lenti.</p></div></div>
+
+  <div class="recipe"><div><h3>Uaa ripetuto</h3><p class="src">Il filtro che ricade.</p></div><div>
+    <knobs>SPEED=3 DEPTH=9 BIAS=2.7 GAIN=10 LEVEL=8 WAVE=0 MODE=VCF</knobs>
+    <p>Il filtro sale e ricade a tempo. Su un accordo pieno sembra un wah azionato da una macchina. Alza SPEED verso 5 per il gorgoglio, abbassa DEPTH per renderlo più discreto.</p></div></div>
+
+  <div class="recipe"><div><h3>Respiro lento</h3><p class="src">Per passaggi veloci e pad.</p></div><div>
+    <knobs>SPEED=1 DEPTH=7 BIAS=3 GAIN=7 LEVEL=8 WAVE=2 MODE=VCF</knobs>
+    <p>Il triangolo muove il filtro in qualche secondo, indipendentemente da quello che suoni: dà movimento senza imporre un ritmo. Ottimo su synth pad, organi e chitarre in arpeggio.</p></div></div>
+
+  <div class="recipe"><div><h3>Elicottero</h3><p class="src">Taglio ritmico.</p></div><div>
+    <knobs>SPEED=4.5 DEPTH=10 BIAS=3.5 GAIN=6 LEVEL=8 WAVE=3 MODE=VCA</knobs>
+    <p>La quadra accende e spegne il suono. BIAS regola quanto "chiude" la parte spenta: più alto, più il suono sparisce del tutto. Mettilo a tempo con la tabella del capitolo 9.</p></div></div>
+
+  <div class="recipe"><div><h3>Anello di metallo</h3><p class="src">Oscillatore udibile.</p></div><div>
+    <knobs>SPEED=9.5 DEPTH=8 BIAS=4 GAIN=8 LEVEL=7 WAVE=2 MODE=VCA</knobs>
+    <p>A settanta, novanta cicli al secondo il VCA moltiplica il segnale e nascono toni nuovi, non armonici: campane, metallo, voce robotica. Passa alla quadra per un suono più duro.</p></div></div>
+
+  <div class="recipe"><div><h3>Frizzante</h3><p class="src">Il Gristleizer spinto.</p></div><div>
+    <knobs>SPEED=2 DEPTH=3 BIAS=1 GAIN=10 LEVEL=5 WAVE=2 MODE=VCA</knobs>
+    <p>Con BIAS basso il VCA è tutto aperto e satura: una distorsione aspra che pulsa appena con l'oscillatore. È la "fizzy distortion" che descrive Carter. Abbassa LEVEL, perché qui il pedale esce forte.</p></div></div>
+
+  <div class="recipe"><div><h3>Voce dal megafono</h3><p class="src">Sulla voce, come Genesis.</p></div><div>
+    <knobs>SPEED=0.8 DEPTH=5 BIAS=3.5 GAIN=5 LEVEL=8 WAVE=2 MODE=VCF</knobs>
+    <p>Pickup su <b>Linea / synth</b>. Il filtro stretto toglie corpo e lascia una banda nasale che si sposta lentamente. Mescolalo al segnale pulito con una mandata, per non perdere l'intelligibilità.</p></div></div>
+
+  <div class="recipe"><div><h3>Loop di batteria</h3><p class="src">Ritmi trattati.</p></div><div>
+    <knobs>SPEED=5 DEPTH=10 BIAS=2.5 GAIN=4 LEVEL=8 WAVE=1 MODE=VCF</knobs>
+    <p>La rampa che scende fa "parlare" il loop con un accento per ciclo. Mettila a tempo (per esempio 4 cicli al secondo a 120 BPM, un ottavo) e il filtro diventa parte del groove. GAIN basso tiene puliti i transienti.</p></div></div>
+</section>
+
+<!-- ============================== 9. STUDIO ============================== -->
+<section class="chapter">
+  <div class="head"><div class="no">9</div><div class="box"><h2>Lavorare in studio</h2></div>
+    <p class="lead">L'oscillatore non si sincronizza alla DAW, come sul pedale vero. Con un po' di aritmetica si mette a tempo; con un po' di routing si usa come un effetto da studio.</p></div>
+
+  <div class="row"><div class="side">Cicli al secondo = BPM ÷ 60 × note per battito. La frequenza misurata si legge nel pannello interno.</div><div class="main">
+    <h3 style="margin-top:0">Mettere l'oscillatore a tempo</h3>
+    <table class="compact">
+      <tr><th>BPM</th><th class="n">1 ciclo per battuta</th><th class="n">un quarto</th><th class="n">un ottavo</th><th class="n">un sedicesimo</th></tr>
+      <tr><td>90</td><td class="n">0,38 Hz</td><td class="n">1,5 Hz</td><td class="n">3,0 Hz</td><td class="n">6,0 Hz</td></tr>
+      <tr><td>100</td><td class="n">0,42 Hz</td><td class="n">1,67 Hz</td><td class="n">3,33 Hz</td><td class="n">6,67 Hz</td></tr>
+      <tr><td>120</td><td class="n">0,50 Hz</td><td class="n">2,0 Hz</td><td class="n">4,0 Hz</td><td class="n">8,0 Hz</td></tr>
+      <tr><td>130</td><td class="n">0,54 Hz</td><td class="n">2,17 Hz</td><td class="n">4,33 Hz</td><td class="n">8,67 Hz</td></tr>
+      <tr><td>140</td><td class="n">0,58 Hz</td><td class="n">2,33 Hz</td><td class="n">4,67 Hz</td><td class="n">9,33 Hz</td></tr>
+    </table>
+    <p>Apri il pannello interno, regola SPEED finché la frequenza misurata si avvicina a quella della tabella e ascolta: piccole derive fanno "respirare" l'effetto rispetto al brano, che spesso è proprio la cosa interessante. Per riallineare la fase, spegni e riaccendi l'effetto con il bypass: l'oscillatore riparte dall'inizio della rampa.</p>
+
+    <h3>La catena dei Throbbing Gristle</h3>
+    <p>Nel gruppo ognuno suonava attraverso Gristleizer, poi un pitch shifter (l'Eventide Harmonizer) e infine un'eco a nastro. Per ritrovare quel modo di lavorare metti dopo Cartilagine un pitch shifter con un intervallo lieve o un leggero desintonizzato, poi un delay a nastro con ripetizioni scure. Il Gristleizer va sempre per primo: lavora meglio sul segnale asciutto.</p>
+
+    <h3>Mandata e parallelo</h3>
+    <p>Il pedale non ha un controllo di miscela. Per un effetto parallelo mettilo su una traccia di mandata, o su una catena parallela, e dosalo con il fader: utile su voce, batterie e bassi, dove il filtro stretto da solo toglierebbe troppo corpo.</p>
+
+    <h3>Reamping e sorgenti di linea</h3>
+    <p>Registra la chitarra pulita e decidi l'effetto dopo: con il pick-up giusto nella barra di servizio, il plugin si comporta come se la chitarra fosse collegata al pedale. Per synth, drum machine e loop scegli <b>Linea / synth</b> e regola INPUT finché i picchi non saturano più del voluto.</p>
+  </div></div>
+</section>
+
+<!-- ============================== 10. DOMANDE ============================== -->
+<section class="chapter">
+  <div class="head"><div class="no">10</div><div class="box"><h2>Domande frequenti</h2></div></div>
+
+  <div class="full cols2">
+    <div><h4 style="margin-top:0">L'effetto esce più basso del segnale diretto</h4><p>Alza LEVEL. Se la tua DI arriva molto bassa, alza anche INPUT nella barra di servizio: lo stadio d'ingresso lavora come con una chitarra vera solo se il livello è realistico.</p></div>
+    <div><h4>Alzo GAIN ma il volume non cresce</h4><p>È normale: il circuito satura e GAIN aumenta la distorsione, non il volume. Il volume si regola con LEVEL o OUTPUT.</p></div>
+    <div><h4>In VCF una nota singola si sente poco</h4><p>Il filtro è molto stretto e passa poche armoniche alla volta. Suona accordi, alza DEPTH o porta BIAS dove il filtro incontra le armoniche più forti della tua chitarra.</p></div>
+    <div><h4>La tastiera non comanda il plugin</h4><p>Fai clic sul display MIDI e controlla che sia scelta la porta "MIDI" della tastiera. Se usi i pulsanti, impostali come momentanei. Il display mostra l'ultimo CC ricevuto: se non cambia, il messaggio non arriva.</p></div>
+    <div><h4>Commutando VCA/VCF sento un colpo</h4><p>Lo fa anche il pedale vero: la commutazione cambia il circuito mentre il segnale passa. Se ti disturba, commuta nelle pause.</p></div>
+    <div><h4>Il suono trattato è in controfase</h4><p>Sì, come sull'originale: lo stadio d'uscita inverte la polarità. Da solo non si sente; se mescoli effetto e segnale pulito in parallelo, inverti la fase della traccia di mandata.</p></div>
+    <div><h4>Quanto consuma</h4><p>Il circuito viene calcolato a circa 384 000 campioni al secondo, perché l'emulazione degli integrati resti fedele: su un Mac recente è una frazione di un core. Nel silenzio, con RUMORE spento, il plugin si ferma e resta attivo solo l'oscillatore.</p></div>
+    <div><h4>Perché c'è latenza</h4><p>Sono 6 campioni a 48 kHz, dovuti al sovracampionamento. La DAW la compensa da sola.</p></div>
+  </div>
+</section>
+
+<!-- ============================== 11. DATI ============================== -->
+<section class="chapter">
+  <div class="head"><div class="no">11</div><div class="box"><h2>Dati tecnici</h2></div></div>
+  <div class="full">
+    <table>
+      <tr><th>Voce</th><th>Valore</th></tr>
+      <tr><td>Formati</td><td>VST3, Audio Unit (effetto), applicazione autonoma; macOS 11 o successivo, Apple Silicon e Intel</td></tr>
+      <tr><td>Canali</td><td>mono in ingresso (somma o canale sinistro), uscita sui due lati</td></tr>
+      <tr><td>Calcolo interno</td><td>circa 384 kHz: 8 volte a 44,1 e 48 kHz, 4 volte a 88,2 e 96 kHz, 2 volte a 176,4 e 192 kHz</td></tr>
+      <tr><td>Latenza</td><td>6 campioni a 48 kHz, compensata dalla DAW</td></tr>
+      <tr><td>Oscillatore</td><td>da 0,1 a 90 cicli al secondo; rampa che sale, rampa che scende, triangolo, quadra</td></tr>
+      <tr><td>Filtro (VCF)</td><td>passa-banda da circa 340 Hz a 2,8 kHz, banda di circa 100 Hz</td></tr>
+      <tr><td>Amplificatore (VCA)</td><td>da circa +4 a +39 dB, secondo BIAS e la posizione dell'oscillatore</td></tr>
+      <tr><td>Livelli</td><td>0 dBFS in ingresso = 1 V di picco; uscita del pedale con lo stesso riferimento</td></tr>
+      <tr><td>MIDI</td><td>porta della tastiera aperta direttamente o CC dalla DAW; MIDI Learn su tutti i comandi; mappatura salvata nel progetto</td></tr>
+      <tr><td>Emulazione</td><td>modello del circuito dell'articolo del 1975, componente per componente, con le modifiche da pannello delle versioni moderne (BIAS, GAIN, LEVEL)</td></tr>
+    </table>
+  </div>
+
+  <div class="row" style="margin-top:8mm"><div class="side"><bolt-small/></div><div class="main">
+    <h3 style="margin-top:0">Fonti</h3>
+    <ol class="sources">
+      <li>R. Gwinn, <em>Guitar Effects Pedal</em>, Practical Electronics, luglio 1975 (ristampato nella raccolta <em>Sound Design</em>).</li>
+      <li>gaussmarkov e stobiepole, <em>Gristleizer</em>, circuito stampato e schema ridisegnato, 2007. <span>gaussmarkov.net</span></li>
+      <li><em>The Gear of Throbbing Gristle</em>, Reverb News. <span>reverb.com/news/the-gear-of-throbbing-gristle</span></li>
+      <li><em>FSS Gristleizer TG Series review</em>, MusicRadar. <span>musicradar.com/reviews/fss-gristleizer-tg-series</span></li>
+      <li><em>Eurorack modules based on the Gristleizer</em>, Sonicstate, agosto 2017. <span>sonicstate.com</span></li>
+      <li><em>From Which the Gristleizer Came</em>, con i commenti di Chris Carter, Matrixsynth, aprile 2007. <span>matrixsynth.com</span></li>
+      <li><em>Throbbing Gristle's Gristleizer audio effects unit</em>, Boing Boing, dicembre 2008. <span>boingboing.net</span></li>
+      <li><em>Gristleizer Eurorack module</em>, Synthtopia, gennaio 2016. <span>synthtopia.com</span></li>
+    </ol>
+  </div></div>
+</section>
+
+<!-- ============================== RETRO ============================== -->
+<section class="back">
+  <bolt/>
+  <div class="inner">
+    <div class="script">Collateral</div><div class="fx">EFFECTS</div>
+    <p>Cartilagine è un'emulazione indipendente del circuito pubblicato da Roy Gwinn nel 1975 e delle versioni che ne sono derivate. Non è affiliata né approvata da Chris Carter, dai Throbbing Gristle, da Industrial Records, da Future Sound Systems o da Endangered Audio Research. I nomi citati appartengono ai rispettivi titolari e sono usati solo per raccontare la storia del circuito.</p>
+    <p>Uso personale e non commerciale. Caratteri: Archivo e Archivo Black (SIL Open Font License), Yellowtail (Apache 2.0).</p>
+    <p>Manuale per la versione 1.2.</p>
+  </div>
+</section>
+
+</body>
+</html>

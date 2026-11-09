@@ -47,6 +47,7 @@ jobs:
           cp scripts/installa.command "dist/CARTILAGINE/Installa CARTILAGINE.command"
           chmod +x "dist/CARTILAGINE/Installa CARTILAGINE.command"
           cp README.md "dist/CARTILAGINE/"
+          cp "docs/manuale/CARTILAGINE-Manuale-d-uso.pdf" "dist/CARTILAGINE/"
           lipo -info "dist/CARTILAGINE/CARTILAGINE.vst3/Contents/MacOS/CARTILAGINE"
           (cd dist && ditto -c -k --keepParent "CARTILAGINE" ../CARTILAGINE-macOS.zip)
 
