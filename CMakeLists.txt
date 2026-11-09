@@ -91,3 +91,14 @@ if(CRT_BUILD_PROCESSOR_TEST)
     target_link_libraries(processor_test PRIVATE CartilagineFonts juce::juce_audio_utils juce::juce_dsp
         PUBLIC juce::juce_recommended_config_flags)
 endif()
+
+# Fa passare un WAV nel plugin (prove d'ascolto e misure di livello)
+option(CRT_BUILD_RENDER "Compila lo strumento di rendering" OFF)
+if(CRT_BUILD_RENDER)
+    juce_add_console_app(crt_render PRODUCT_NAME "crt_render")
+    target_sources(crt_render PRIVATE tools/render.cpp Source/PluginProcessor.cpp Source/PluginEditor.cpp)
+    target_compile_definitions(crt_render PRIVATE JucePlugin_Name="CARTILAGINE"
+        JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+    target_link_libraries(crt_render PRIVATE CartilagineFonts juce::juce_audio_utils juce::juce_dsp
+        PUBLIC juce::juce_recommended_config_flags)
+endif()
