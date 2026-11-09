@@ -21,11 +21,12 @@ namespace ParamIDs
     inline constexpr const char* pickupR = "pickupR";
     inline constexpr const char* pickupL = "pickupL";
     inline constexpr const char* gtrVol  = "gtrVol";
+    inline constexpr const char* bias    = "bias";      // VR5 portato sul pannello (con 220k verso +9 V)
+    inline constexpr const char* gain    = "gain";      // pot al posto di R21 (guadagno di IC4)
+    inline constexpr const char* level   = "level";     // VR6 portato sul pannello (log)
     // interno
     inline constexpr const char* vr2     = "vr2";       // TRIANGLE SHAPING
     inline constexpr const char* vr3     = "vr3";       // TRIANGLE OFFSET
-    inline constexpr const char* vr5     = "vr5";       // SET BIAS
-    inline constexpr const char* vr6     = "vr6";       // LEVEL
     inline constexpr const char* battery = "battery";   // tensione delle due PP3
     inline constexpr const char* jfetVp  = "jfetVp";    // Vgs(off) del 2N3819
 }
@@ -86,11 +87,12 @@ public:
     // MIDI CC: mappa e MIDI Learn (senza lock). I CC arrivano sul thread audio, che
     // scrive in una coda di atomici; un timer sul thread dei messaggi li applica ai
     // parametri (così l'host riceve le notifiche dal thread giusto).
-    static constexpr int numLearnable = 14;
+    static constexpr int numLearnable = 15;
     static const std::array<const char*, numLearnable> learnableIDs;
     static constexpr int idxSpeed = 0, idxDepth = 1, idxWave = 2, idxMode = 3, idxBypass = 4,
-                         idxInput = 5, idxOutput = 6, idxGtrVol = 7,
-                         idxVr2 = 8, idxVr3 = 9, idxVr5 = 10, idxVr6 = 11, idxBattery = 12, idxVp = 13;
+                         idxBias = 5, idxGain = 6, idxLevel = 7,
+                         idxInput = 8, idxOutput = 9, idxGtrVol = 10,
+                         idxVr2 = 11, idxVr3 = 12, idxBattery = 13, idxVp = 14;
 
     int  getLearnIndex (const juce::String& paramID) const;
     void startLearn (int paramIndex)  { learningParam.store (paramIndex); }
@@ -112,6 +114,7 @@ public:
     std::array<std::atomic<float>, scopeSize> scope;
     std::atomic<int> scopeWrite { 0 };
     std::atomic<float> lfoHz { 0.0f }, gateMin { 0.0f }, gateMax { 0.0f }, scopeRate { 6000.0f };
+    std::atomic<float> ledLevel { 0.0f };                 // tensione della forma d'onda per il LED
     std::atomic<bool> running { false };
 
 private:
@@ -125,7 +128,7 @@ private:
     juce::dsp::DryWetMixer<float> mixer { 256 };
 
     juce::SmoothedValue<float> speedSm, depthSm, inGainSm, outGainSm, vbatSm, vpSm, gtrSm;
-    std::array<juce::SmoothedValue<float>, 4> trimSm;
+    std::array<juce::SmoothedValue<float>, 5> trimSm;   // VR2, VR3, BIAS, LEVEL, GAIN
 
     std::atomic<float>* speedRaw   = nullptr;
     std::atomic<float>* depthRaw   = nullptr;
@@ -140,8 +143,9 @@ private:
     std::atomic<float>* gtrRaw     = nullptr;
     std::atomic<float>* batteryRaw = nullptr;
     std::atomic<float>* vpRaw      = nullptr;
-    std::array<std::atomic<float>*, 4> trimRaw {};
+    std::array<std::atomic<float>*, 5> trimRaw {};
     grz::Pickup currentPickup() const;
+    void applyTrims (float vr2, float vr3, float bias, float level, float gain);
     juce::AudioParameterBool* bypassParam = nullptr;
 
     std::array<juce::RangedAudioParameter*, numLearnable> learnParams {};

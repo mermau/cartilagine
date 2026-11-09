@@ -11,14 +11,20 @@ forme d'onda e due trattamenti si ottengono gli "otto effetti di base" dell'arti
 
 ## Comandi
 
+Il pannello segue i Gristleizer autocostruiti di oggi: BIAS e LEVEL, che sull'originale erano
+trimmer interni (VR5, VR6), sono manopole, e un pot GAIN prende il posto di R21. Ci sono anche un
+LED che segue l'LFO, un deviatore VCA/VCF e un solo interruttore a pedale con il suo LED.
+
 | Comando | Componente | CC predefinito (KeyLab mkII, modalità User) |
 |---|---|---|
-| speed | VR1 10k log: LFO da ~0,1 Hz (a zero) a ~90 Hz, ~9 Hz a metà | 74 (encoder 1) |
-| depth | VR4 10k lin: quanta forma d'onda arriva al gate del JFET | 71 (encoder 2) |
+| SPEED | VR1 10k log: LFO da ~0,1 Hz (a zero) a ~90 Hz, ~9 Hz a metà | 74 (encoder 1) |
+| DEPTH | VR4 10k lin: quanta forma d'onda arriva al gate del JFET | 71 (encoder 2) |
 | forma d'onda | S1: rampa che sale, rampa che scende, triangolo, quadra | 76 (encoder 3) |
-| filter / envelope | S2 (a pedale) | 65 (commuta alla pressione) |
-| in / out | S3 (a pedale): OUT collega l'ingresso direttamente all'uscita | 64 (pedale sustain) |
-| VR5 SET BIAS (interno) | polarizzazione del gate: il centro della spazzata | 77 (encoder 4) |
+| BIAS | VR5 100k con 220k verso +9 V: la corsa copre solo la zona utile (gate da −3,6 a −0,5 V); il centro della spazzata del filtro e il volume medio del VCA | 77 (encoder 4) |
+| GAIN | pot 100k log al posto di R21: guadagno di IC4 da ×1 a ×11 (a fondo corsa = originale) | 93 (encoder 5) |
+| LEVEL | VR6 come pot log: volume dell'effetto (predefinito −6 dB) | 18 (encoder 6) |
+| VCA / VCF | S2 (deviatore) | 65 (commuta alla pressione) |
+| bypass | S3 (a pedale), LED acceso = effetto inserito | 64 (pedale sustain) |
 | INPUT / OUTPUT, VOLUME, PICKUP | barra di servizio (non fanno parte del pedale) | — |
 
 **MIDI Learn**: clic destro su un comando, poi *MIDI Learn*, poi muovi un controllo della KeyLab.
@@ -39,10 +45,9 @@ sui passaggi veloci.
 
 Livelli reali: 0 dBFS in ingresso corrisponde a 1 V di picco. Il circuito è "caldo": IC4 amplifica 11
 volte e IC5 ancora 10 (VCA) o 23,5 (centro del filtro), quindi con la chitarra a pieno volume i 741
-saturano. È il suono dell'originale. VR6 (LEVEL) è tarato perché l'effetto esca circa al
-livello del segnale diretto, come chiede l'articolo. Siccome IC5 satura a ±8 V, l'effetto non supera
-circa −6 dBFS di picco: alzando INPUT aumenta la distorsione, non il volume; per il volume usa OUTPUT
-(o VR6 nel pannello interno).
+saturano. È il suono dell'originale. IC5 satura a ±8 V: alzando INPUT o GAIN aumenta la
+distorsione, non il volume; per il volume usa LEVEL o OUTPUT. Con LEVEL a −6 dB l'effetto può
+arrivare a +12 dBFS di picco.
 
 **Applicazione autonoma**: JUCE la avvia con l'ingresso audio silenziato (contro il feedback);
 CARTILAGINE lo riattiva da sé all'apertura. Se senti solo la chitarra diretta, controlla in
@@ -55,13 +60,13 @@ il monitoraggio diretto della scheda audio.
   dell'LFO misurata. L'articolo consiglia proprio un oscilloscopio per la taratura.
 - **Gate del JFET e spazzata misurati** sull'ultimo secondo e mezzo: in FILTER la frequenza centrale minima e
   massima, in ENVELOPE il guadagno del VCA.
-- **VR2 TRIANGLE SHAPING, VR3 TRIANGLE OFFSET, VR5 SET BIAS, VR6 LEVEL**: i quattro trimmer.
+- **VR2 TRIANGLE SHAPING, VR3 TRIANGLE OFFSET**: i due trimmer rimasti dentro.
   Maiusc + trascina per la regolazione fine, doppio clic per la taratura originale.
 - **Batterie** (6 – 9,6 V): cambiano la velocità dell'LFO, le soglie del trigger, la polarizzazione
   e la saturazione dei 741.
 - **2N3819 Vp** (−1 … −6 V): il datasheet ammette da −0,5 a −8 V. Cambiando JFET si sposta tutta la
-  spazzata e VR5 va ritarato, come sul pedale vero. IDSS segue Vp e la resistenza minima del canale resta ~128 Ω.
-- **TARATURA ORIGINALE** riporta trimmer, batterie e JFET ai valori di fabbrica.
+  spazzata e BIAS va ritoccato, come sul pedale vero. IDSS segue Vp e la resistenza minima del canale resta ~128 Ω.
+- **TARATURA ORIGINALE** riporta trimmer, BIAS, GAIN, LEVEL, batterie e JFET ai valori di fabbrica.
 
 ### La taratura di fabbrica (procedura "Setting up" dell'articolo, eseguita sul modello)
 
@@ -69,10 +74,23 @@ il monitoraggio diretto della scheda audio.
 |---|---|---|
 | VR2 | forma d'onda su "triangolo", miglior triangolo: estremi uguali, quindi nessun salto quando la rampa torna indietro | 64,7 % |
 | VR3 | 0 V di media all'uscita di IC3 | 27,8 % |
-| VR5 | FILTER, DEPTH al massimo: spazzata piena e regolare, da ~340 Hz (JFET interdetto) a ~2,2 kHz | 11,5 % |
-| VR6 | effetto allo stesso volume del segnale diretto (DI di chitarra tra −20 e −6 dBFS, ENVELOPE e FILTER) | 6,3 % (−24 dB) |
+| VR5 / BIAS | FILTER, DEPTH al massimo: spazzata piena e regolare, da ~340 Hz (JFET interdetto) a ~2,2 kHz | 11,5 % del pot originale = BIAS a 2,7 |
+| VR6 / LEVEL | a orecchio, con la chitarra (la taratura "stesso volume del diretto" usciva troppo bassa) | −6 dB |
 
 `tests/circuit_test.cpp` rifà la taratura di VR2 e VR3 e controlla che coincida con quella del plugin.
+
+## I Gristleizer autocostruiti di oggi
+
+Le versioni moderne (Endangered Audio Research, Emmerich "Gristle Throbber" e molti pedali fatti in
+casa) mantengono il circuito di Gwinn e cambiano il pannello in modo molto simile:
+- **BIAS e LEVEL fuori**: i due trimmer che contano davvero mentre si suona. BIAS sposta il punto di
+  lavoro del JFET, e quindi la zona della spazzata; LEVEL compensa un circuito molto caldo.
+- **GAIN** (in alcune versioni): regola quanto IC4 spinge il JFET e IC5, quindi la saturazione.
+- **LED di velocità**, pilotato dalla forma d'onda: indispensabile con l'LFO lento.
+- **VCA/VCF su deviatore** e un solo pedale di bypass con LED, al posto dei due pedali.
+- **SPEED** a volte si chiama **FREQ**; il selettore resta a 4 posizioni.
+- Alimentazione: quasi sempre un 9 V unico (con pompa di carica o massa virtuale) al posto delle
+  due PP3, e spesso TL072 al posto dei 741. In questo plugin restano i 741 dell'articolo.
 
 ## Il circuito, stadio per stadio
 
@@ -163,8 +181,8 @@ I test girano tutti su GitHub:
 
 ## Grafica e caratteri
 
-Interfaccia ispirata al pedale della foto dell'articolo: scatola nera con pannello chiaro, scritte
-minuscole ("instrument", "amplifier", "speed", "depth", "filter / envelope", "in / out"), manopole nere
-con la croce, il selettore delle forme d'onda e i due interruttori a pedale. Lettering e marchio sono
-propri. Caratteri: Questrial e Archivo Black (SIL OFL), Yellowtail (Apache 2.0), licenze in
-`resources/fonts/`. Uso personale e non commerciale.
+Interfaccia ispirata ai Gristleizer autocostruiti: scatola grigio chiaro verniciata a polvere,
+serigrafia nera, manopole nere zigrinate, LED rossi, deviatore VCA/VCF. Nome, scritte e la
+"scintilla" (un dente di sega spezzato, cioè la rampa dell'LFO) sono propri: il logo e lo slogan dei
+Throbbing Gristle non sono riprodotti. Caratteri: Archivo Black (SIL OFL), Yellowtail (Apache 2.0),
+licenze in `resources/fonts/`. Uso personale e non commerciale.

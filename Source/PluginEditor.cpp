@@ -8,11 +8,11 @@
 
 namespace
 {
-    // pannello del pedale: alluminio verniciato bianco avorio su scatola di plastica nera
-    const juce::Colour plateLight (0xfff3f1ea);
-    const juce::Colour plateMid   (0xffe7e4da);
-    const juce::Colour plateDark  (0xffd2cec2);
-    const juce::Colour ink        (0xff1b1a19);   // serigrafia
+    // scatola di alluminio verniciata a polvere grigio chiaro, serigrafia nera
+    const juce::Colour greyLight  (0xffbcc0c3);
+    const juce::Colour greyMid    (0xffaaaeb2);
+    const juce::Colour greyDark   (0xff93979b);
+    const juce::Colour ink        (0xff111213);   // serigrafia
     const juce::Colour cream      (0xffe4e5e7);   // testi chiari della barra di servizio
     const juce::Colour stripCol   (0xff121214);
     const juce::Colour lineCol    (0xff36373b);
@@ -29,9 +29,10 @@ namespace
         return juce::Font (juce::FontOptions (face).withPointHeight (pt)).withExtraKerningFactor (tracking / pt);
     }
 
-    const char* displayNames[] = { "SPEED", "DEPTH", "FORMA D'ONDA", "FILTER / ENVELOPE", "IN / OUT",
+    const char* displayNames[] = { "SPEED", "DEPTH", "FORMA D'ONDA", "VCA / VCF", "BYPASS",
+                                   "BIAS", "GAIN", "LEVEL",
                                    "INPUT", "OUTPUT", "VOLUME CHITARRA",
-                                   "VR2 TRIANGLE SHAPING", "VR3 TRIANGLE OFFSET", "VR5 SET BIAS", "VR6 LEVEL",
+                                   "VR2 TRIANGLE SHAPING", "VR3 TRIANGLE OFFSET",
                                    "BATTERIE", "2N3819 Vp" };
 
     void drawBaseline (juce::Graphics& g, const juce::Font& f, const juce::String& s,
@@ -53,21 +54,6 @@ namespace
         cg.addColour (0.35, juce::Colour (0xffd6d8db).darker (darken));
         cg.addColour (0.75, juce::Colour (0xff868a90).darker (darken));
         return cg;
-    }
-
-    void drawScrew (juce::Graphics& g, juce::Point<float> c, float r)
-    {
-        using namespace juce;
-        g.setColour (Colours::black.withAlpha (0.25f));
-        g.fillEllipse (Rectangle<float> (2 * r + 2, 2 * r + 2).withCentre (c.translated (0.5f, 1.2f)));
-        g.setGradientFill (chrome (c, r, 0.1f));
-        g.fillEllipse (Rectangle<float> (2 * r, 2 * r).withCentre (c));
-        g.setColour (Colour (0xff6d6a60));
-        g.drawEllipse (Rectangle<float> (2 * r, 2 * r).withCentre (c), 0.6f);
-        g.setColour (Colour (0xff4a4a48));
-        const float a = r * 0.62f;
-        g.drawLine (c.x - a, c.y - a * 0.3f, c.x + a, c.y + a * 0.3f, r * 0.28f);
-        g.drawLine (c.x - a * 0.3f, c.y + a, c.x + a * 0.3f, c.y - a, r * 0.28f);
     }
 
     // simboli delle forme d'onda (S1), centrati in c, larghezza w
@@ -150,48 +136,35 @@ void PedalLookAndFeel::drawPedalKnob (juce::Graphics& g, juce::Point<float> c, f
 {
     using namespace juce;
     // ombra portata sul pannello
-    g.setColour (Colours::black.withAlpha (0.22f));
-    g.fillEllipse (Rectangle<float> (96 * k, 96 * k).withCentre (c.translated (4 * k, 7 * k)));
+    g.setColour (Colours::black.withAlpha (0.28f));
+    g.fillEllipse (Rectangle<float> (96 * k, 96 * k).withCentre (c.translated (4 * k, 8 * k)));
     g.setColour (Colours::black.withAlpha (0.12f));
-    g.fillEllipse (Rectangle<float> (104 * k, 104 * k).withCentre (c.translated (6 * k, 10 * k)));
-
-    // fianco del cilindro
-    g.setGradientFill (ColourGradient (Colour (0xff2e2e30), c.x, c.y - 46 * k, Colour (0xff040404), c.x, c.y + 48 * k, false));
-    g.fillEllipse (Rectangle<float> (92 * k, 92 * k).withCentre (c.translated (0, 3 * k)));
-    // gonna zigrinata
-    g.setColour (Colour (0xff3a3a3d));
-    for (int i = 0; i < 48; ++i)
+    g.fillEllipse (Rectangle<float> (106 * k, 106 * k).withCentre (c.translated (6 * k, 12 * k)));
+    // fianco zigrinato
+    g.setGradientFill (ColourGradient (Colour (0xff2c2c2e), c.x, c.y - 46 * k, Colour (0xff030303), c.x, c.y + 48 * k, false));
+    g.fillEllipse (Rectangle<float> (94 * k, 94 * k).withCentre (c.translated (0, 3 * k)));
+    for (int i = 0; i < 36; ++i)
     {
-        const float a = (float) i / 48.0f * MathConstants<float>::twoPi;
-        g.drawLine (Line<float> (c.getPointOnCircumference (40 * k, a), c.getPointOnCircumference (45.5f * k, a)), 0.9f * k);
+        const float a = (float) i / 36.0f * MathConstants<float>::twoPi;
+        const float lit = 0.5f + 0.5f * std::cos (a + 0.8f);
+        g.setColour (Colour (0xff18181a).interpolatedWith (Colour (0xff4a4a4e), lit * 0.8f));
+        g.drawLine (Line<float> (c.getPointOnCircumference (38 * k, a), c.getPointOnCircumference (46.5f * k, a)), 2.2f * k);
     }
-    ColourGradient bevel (Colour (0xff4a4a4e), c.x - 26 * k, c.y - 36 * k, Colour (0xff070707), c.x + 26 * k, c.y + 36 * k, false);
-    g.setGradientFill (bevel);
-    g.fillEllipse (Rectangle<float> (78 * k, 78 * k).withCentre (c));
-
-    // cappellotto chiaro con la croce (ruota con la manopola)
-    const float r = 30.0f * k;
-    g.setGradientFill (ColourGradient (Colour (0xfff2f2ef), c.x - r * 0.6f, c.y - r * 0.7f, Colour (0xffa9aaa6), c.x + r * 0.7f, c.y + r * 0.8f, true));
-    g.fillEllipse (Rectangle<float> (2 * r, 2 * r).withCentre (c));
-    g.setColour (Colours::black.withAlpha (0.5f));
-    g.drawEllipse (Rectangle<float> (2 * r, 2 * r).withCentre (c), 1.0f * k);
-    // riflesso lucido fisso
-    g.setGradientFill (ColourGradient (Colours::white.withAlpha (0.55f), c.x - 10 * k, c.y - 20 * k,
-                                       Colours::white.withAlpha (0.0f), c.x - 10 * k, c.y + 2 * k, false));
-    g.fillEllipse (Rectangle<float> (36 * k, 20 * k).withCentre (c.translated (-6 * k, -14 * k)));
-    // la croce: quattro bracci neri; quello dell'indice arriva al bordo della gonna
-    const auto rot = AffineTransform::rotation (angle).translated (c);
-    g.setColour (Colour (0xff141414));
-    for (int i = 0; i < 4; ++i)
-    {
-        Path arm; arm.addRoundedRectangle (-2.6f * k, -r + 3.0f * k, 5.2f * k, r - 6.0f * k, 1.6f * k);
-        g.fillPath (arm, AffineTransform::rotation ((float) i * MathConstants<float>::halfPi).followedBy (rot));
-    }
-    g.fillEllipse (Rectangle<float> (8 * k, 8 * k).withCentre (c));
-    // indice bianco sulla gonna
-    Path idx; idx.addRoundedRectangle (-2.0f * k, -45.0f * k, 4.0f * k, 12.0f * k, 1.8f * k);
-    g.setColour (Colour (0xfff4f4f2));
-    g.fillPath (idx, rot);
+    // faccia superiore leggermente bombata
+    ColourGradient top (Colour (0xff3a3a3e), c.x - 18 * k, c.y - 26 * k, Colour (0xff060606), c.x + 26 * k, c.y + 32 * k, true);
+    top.addColour (0.5, Colour (0xff141416));
+    g.setGradientFill (top);
+    g.fillEllipse (Rectangle<float> (76 * k, 76 * k).withCentre (c));
+    g.setColour (Colours::black.withAlpha (0.7f));
+    g.drawEllipse (Rectangle<float> (76 * k, 76 * k).withCentre (c), 1.0f * k);
+    // riflesso fisso
+    g.setGradientFill (ColourGradient (Colours::white.withAlpha (0.22f), c.x - 12 * k, c.y - 24 * k,
+                                       Colours::white.withAlpha (0.0f), c.x - 12 * k, c.y + 2 * k, false));
+    g.fillEllipse (Rectangle<float> (46 * k, 26 * k).withCentre (c.translated (-8 * k, -16 * k)));
+    // linea bianca dell'indice
+    Path idx; idx.addRoundedRectangle (-2.4f * k, -36.0f * k, 4.8f * k, 22.0f * k, 2.0f * k);
+    g.setColour (Colour (0xfff2f2f0));
+    g.fillPath (idx, AffineTransform::rotation (angle).translated (c));
 }
 
 void PedalLookAndFeel::drawRotarySlider (juce::Graphics& g, int x, int y, int w, int h, float pos,
@@ -252,7 +225,7 @@ void PedalLookAndFeel::drawRotarySlider (juce::Graphics& g, int x, int y, int w,
 
     if (style == "pedal")     // manopole del pedale
     {
-        drawPedalKnob (g, c, jmin (b.getWidth(), b.getHeight()) / 126.0f, angle);
+        drawPedalKnob (g, c, jmin (b.getWidth(), b.getHeight()) / 134.0f, angle);
         return;
     }
 
@@ -321,6 +294,57 @@ void FootSwitch::paintButton (juce::Graphics& g, bool highlighted, bool down)
 }
 
 //==============================================================================
+void ToggleSwitch::mouseDown (const juce::MouseEvent& e)
+{
+    if (e.mods.isPopupMenu()) { if (onLearnMenu) onLearnMenu(); return; }
+    Button::mouseDown (e);
+}
+
+void ToggleSwitch::drawToggle (juce::Graphics& g, juce::Rectangle<float> b, bool up, bool highlighted)
+{
+    using namespace juce;
+    const auto c = b.getCentre();
+    const float k = jmin (b.getWidth(), b.getHeight()) / 58.0f;
+    g.setColour (Colours::black.withAlpha (0.25f));
+    g.fillEllipse (Rectangle<float> (30 * k, 30 * k).withCentre (c.translated (2 * k, 4 * k)));
+    // dado esagonale e boccola
+    Path hex;
+    for (int i = 0; i < 6; ++i)
+    {
+        const auto p = c.getPointOnCircumference (14.0f * k, (float) i * MathConstants<float>::pi / 3.0f);
+        if (i == 0) hex.startNewSubPath (p); else hex.lineTo (p);
+    }
+    hex.closeSubPath();
+    g.setGradientFill (chrome (c, 14 * k, 0.15f));
+    g.fillPath (hex);
+    g.setColour (Colour (0xff5d6066));
+    g.strokePath (hex, PathStrokeType (0.8f * k));
+    g.setGradientFill (chrome (c, 8 * k, 0.0f));
+    g.fillEllipse (Rectangle<float> (15 * k, 15 * k).withCentre (c));
+    g.setColour (Colour (0xff2a2a2c));
+    g.fillEllipse (Rectangle<float> (7 * k, 7 * k).withCentre (c));
+    // levetta (in alto = VCA, in basso = VCF)
+    const float dir = up ? -1.0f : 1.0f;
+    const auto tip = c.translated (0, dir * 24 * k);
+    Path lever;
+    lever.startNewSubPath (c.x - 2.6f * k, c.y);
+    lever.lineTo (tip.x - 3.6f * k, tip.y); lever.lineTo (tip.x + 3.6f * k, tip.y);
+    lever.lineTo (c.x + 2.6f * k, c.y); lever.closeSubPath();
+    g.setColour (Colours::black.withAlpha (0.3f));
+    g.fillPath (lever, AffineTransform::translation (2 * k, 3 * k));
+    g.setGradientFill (ColourGradient (Colour (0xfff4f5f6), c.x - 4 * k, 0, Colour (0xff7d8187), c.x + 4 * k, 0, false));
+    g.fillPath (lever);
+    g.setGradientFill (chrome (tip, 4.5f * k, 0.0f));
+    g.fillEllipse (Rectangle<float> (9 * k, 9 * k).withCentre (tip));
+    if (highlighted) { g.setColour (Colours::white.withAlpha (0.08f)); g.fillEllipse (Rectangle<float> (30 * k, 30 * k).withCentre (c)); }
+}
+
+void ToggleSwitch::paintButton (juce::Graphics& g, bool highlighted, bool)
+{
+    drawToggle (g, getLocalBounds().toFloat(), getToggleState(), highlighted);
+}
+
+//==============================================================================
 InteriorPanel::InteriorPanel (GristleProcessor& p, juce::Typeface::Ptr panelFace,
                               std::function<void (int, juce::Component*)> learnMenu)
     : proc (p), face (panelFace)
@@ -343,20 +367,14 @@ InteriorPanel::InteriorPanel (GristleProcessor& p, juce::Typeface::Ptr panelFace
     };
     setupKnob (vr2, ParamIDs::vr2, "trimmer", grz::Trim::vr2, "VR2 TRIANGLE SHAPING: sposta il punto in cui TR1 satura (la punta del triangolo)");
     setupKnob (vr3, ParamIDs::vr3, "trimmer", grz::Trim::vr3, "VR3 TRIANGLE OFFSET: toglie la componente continua del triangolo");
-    setupKnob (vr5, ParamIDs::vr5, "trimmer", grz::Trim::vr5, "VR5 SET BIAS: polarizzazione del gate del JFET, cio\xc3\xa8 il centro della spazzata");
-    setupKnob (vr6, ParamIDs::vr6, "trimmer", grz::Trim::vr6, "VR6 LEVEL: livello d'uscita dell'effetto");
     setupKnob (battery, ParamIDs::battery, "charge", Battery::nominalV, "Tensione delle due PP3 (\xc2\xb1V)");
     setupKnob (vp, ParamIDs::jfetVp, "trimmer", -3.0, "Vgs(off) del 2N3819 (da \xe2\x88\x92" "0,5 a \xe2\x88\x92" "8 V secondo il datasheet): cambia il JFET, poi ritocca VR5");
-    vr6.setSkewFactorFromMidPoint (0.08);
     vr2A = std::make_unique<AudioProcessorValueTreeState::SliderAttachment> (proc.apvts, ParamIDs::vr2, vr2);
     vr3A = std::make_unique<AudioProcessorValueTreeState::SliderAttachment> (proc.apvts, ParamIDs::vr3, vr3);
-    vr5A = std::make_unique<AudioProcessorValueTreeState::SliderAttachment> (proc.apvts, ParamIDs::vr5, vr5);
-    vr6A = std::make_unique<AudioProcessorValueTreeState::SliderAttachment> (proc.apvts, ParamIDs::vr6, vr6);
     batA = std::make_unique<AudioProcessorValueTreeState::SliderAttachment> (proc.apvts, ParamIDs::battery, battery);
     vpA  = std::make_unique<AudioProcessorValueTreeState::SliderAttachment> (proc.apvts, ParamIDs::jfetVp, vp);
-    vr6.setSkewFactorFromMidPoint (0.08);   // il livello giusto sta tutto all'inizio della corsa
 
-    resetBtn.setTooltip ("Trimmer come nella taratura dell'articolo, batterie a 9 V, 2N3819 tipico (Vp \xe2\x88\x92" "3 V)");
+    resetBtn.setTooltip ("Trimmer come nella taratura dell'articolo, BIAS, GAIN e LEVEL di fabbrica, batterie a 9 V, 2N3819 tipico (Vp \xe2\x88\x92" "3 V)");
     resetBtn.onClick = [this] { resetToOriginal(); };
     closeBtn.onClick = [this] { if (onClose) onClose(); };
     addAndMakeVisible (resetBtn);
@@ -378,10 +396,8 @@ void InteriorPanel::resized()
 {
     k = (float) getWidth() / baseW;
     const float y = 318.0f;
-    vr2.setBounds (area (24, y - 40, 80, 80));
-    vr3.setBounds (area (107, y - 40, 80, 80));
-    vr5.setBounds (area (190, y - 40, 80, 80));
-    vr6.setBounds (area (273, y - 40, 80, 80));
+    vr2.setBounds (area (80, y - 40, 80, 80));
+    vr3.setBounds (area (220, y - 40, 80, 80));
     battery.setBounds (area (40, 448, 92, 92));
     vp.setBounds (area (250, 452, 84, 84));
     resetBtn.setBounds (area (24, 600, 180, 34));
@@ -394,8 +410,6 @@ juce::Component* InteriorPanel::controlFor (int idx)
     {
         case GristleProcessor::idxVr2: return &vr2;
         case GristleProcessor::idxVr3: return &vr3;
-        case GristleProcessor::idxVr5: return &vr5;
-        case GristleProcessor::idxVr6: return &vr6;
         case GristleProcessor::idxBattery: return &battery;
         case GristleProcessor::idxVp: return &vp;
         default: return nullptr;
@@ -411,8 +425,9 @@ void InteriorPanel::resetToOriginal()
     };
     set (ParamIDs::vr2, (float) grz::Trim::vr2);
     set (ParamIDs::vr3, (float) grz::Trim::vr3);
-    set (ParamIDs::vr5, (float) grz::Trim::vr5);
-    set (ParamIDs::vr6, (float) grz::Trim::vr6);
+    set (ParamIDs::bias, (float) grz::PanelMod::biasKnob);
+    set (ParamIDs::level, (float) grz::PanelMod::levelKnob);
+    set (ParamIDs::gain, (float) grz::PanelMod::gainKnob);
     set (ParamIDs::battery, (float) Battery::nominalV);
     set (ParamIDs::jfetVp, -3.0f);
 }
@@ -488,7 +503,7 @@ void InteriorPanel::paint (juce::Graphics& g)
             l2 = "filtro: da " + hzText (filterHz (gmin, vpv)) + " a " + hzText (filterHz (gmax, vpv));
         else
             l2 = "VCA: da " + String (vcaDb (gmax, vpv), 1) + " a " + String (vcaDb (gmin, vpv), 1) + " dB";
-        if (gmax > -0.05f) l2 << String::fromUTF8 ("   (gate al limite: VR5 troppo alto)");
+        if (gmax > -0.05f) l2 << String::fromUTF8 ("   (gate al limite: BIAS troppo alto)");
         else if (gmin < vpv) l2 << String::fromUTF8 ("   (JFET interdetto in fondo alla corsa)");
         g.drawText (live ? l1 : String(), Rectangle<float> (24, 196, W - 48, 16), Justification::centredLeft);
         g.setColour (Colour (0xffb9bcc0));
@@ -509,8 +524,7 @@ void InteriorPanel::paint (juce::Graphics& g)
             g.fillEllipse (xx - 1.6f, yy - 1.6f, 3.2f, 3.2f);
 
     struct T { float cx; const char* a; const char* b; const char* id; };
-    const T ts[] = { { 64.0f, "VR2", "TRIANGLE\nSHAPING", ParamIDs::vr2 }, { 147.0f, "VR3", "TRIANGLE\nOFFSET", ParamIDs::vr3 },
-                     { 230.0f, "VR5", "SET\nBIAS", ParamIDs::vr5 },          { 313.0f, "VR6", "LEVEL", ParamIDs::vr6 } };
+    const T ts[] = { { 120.0f, "VR2", "TRIANGLE\nSHAPING", ParamIDs::vr2 }, { 260.0f, "VR3", "TRIANGLE\nOFFSET", ParamIDs::vr3 } };
     for (auto& t : ts)
     {
         g.setColour (Colour (0xcc111012));
@@ -522,7 +536,6 @@ void InteriorPanel::paint (juce::Graphics& g)
         g.drawFittedText (t.b, Rectangle<float> (t.cx - 38, 256, 76, 20).toNearestInt(), Justification::centred, 2);
         const float v = proc.apvts.getRawParameterValue (t.id)->load();
         String val = String (v * 100.0f, 1) + " %";
-        if (String (t.id) == ParamIDs::vr6) val = String (Decibels::gainToDecibels (v, -80.0f), 1) + " dB";
         g.setColour (Colour (0xcc111012));
         g.fillRoundedRectangle (t.cx - 38, 364, 76, 20, 4.0f);
         g.setColour (Colour (0xffeee8f0));
@@ -533,7 +546,7 @@ void InteriorPanel::paint (juce::Graphics& g)
     g.fillRoundedRectangle (pcb.getX() + 8, 386, pcb.getWidth() - 16, 14, 3.0f);
     g.setColour (Colour (0xffcfc6d2));
     g.setFont (uiFont (8.5f, false));
-    g.drawText (String::fromUTF8 ("VR2 triangolo senza salti \xc2\xb7 VR3 0 V medi \xc2\xb7 VR5 spazzata piena \xc2\xb7 VR6 stesso volume"),
+    g.drawText (String::fromUTF8 ("VR2: triangolo senza salti \xc2\xb7 VR3: 0 V medi (VR5 e VR6 sono BIAS e LEVEL sul pannello)"),
                 Rectangle<float> (pcb.getX() + 8, 387, pcb.getWidth() - 16, 12), Justification::centred);
 
     // --- batterie e JFET ---
@@ -559,18 +572,64 @@ void InteriorPanel::paint (juce::Graphics& g)
 }
 
 //==============================================================================
-// Il pedale, in unità di progetto: corpo largo 330 e alto 540 (u = scala)
+// Il pedale, in unità di progetto: corpo largo 330 e alto 540 (u = scala).
+// Disposizione ispirata ai Gristleizer autocostruiti di oggi (scatola grigia, serigrafia nera,
+// BIAS / DEPTH / GAIN / LEVEL in alto); scritte e grafica proprie.
+namespace
+{
+    // la "scintilla": un dente di sega spezzato, cioè la rampa dell'LFO che scarica
+    juce::Path sparkPath (std::function<juce::Point<float> (float, float)> P, float u)
+    {
+        using namespace juce;
+        const Point<float> pts[] = { P (300, 270), P (252, 330), P (280, 330), P (226, 396), P (254, 396), P (196, 466) };
+        Path centre;
+        centre.startNewSubPath (pts[0]);
+        for (int i = 1; i < 6; ++i) centre.lineTo (pts[i]);
+        Path out;
+        PathStrokeType (12.0f * u, PathStrokeType::mitered, PathStrokeType::butt).createStrokedPath (out, centre);
+        // punta
+        const auto a = pts[4], b = pts[5];
+        const auto d = (b - a) / a.getDistanceFrom (b);
+        const Point<float> n (-d.y, d.x);
+        Path tip;
+        tip.addTriangle (b - n * (11.0f * u), b + n * (11.0f * u), b + d * (24.0f * u));
+        out.addPath (tip);
+        return out;
+    }
+}
+
+void GristleEditor::drawLed (juce::Graphics& g, juce::Point<float> c, float r, float level)
+{
+    using namespace juce;
+    level = jlimit (0.0f, 1.0f, level);
+    // ghiera cromata
+    g.setGradientFill (chrome (c, r * 1.45f, 0.1f));
+    g.fillEllipse (Rectangle<float> (r * 2.9f, r * 2.9f).withCentre (c));
+    // lente
+    const Colour off (0xff4a0d0b), on (0xffff3b24);
+    g.setGradientFill (ColourGradient (off.interpolatedWith (on, level).brighter (0.3f), c.x - r * 0.4f, c.y - r * 0.5f,
+                                       off.interpolatedWith (on, level * 0.8f).darker (0.4f), c.x + r, c.y + r, true));
+    g.fillEllipse (Rectangle<float> (r * 2.0f, r * 2.0f).withCentre (c));
+    if (level > 0.02f)
+    {
+        g.setGradientFill (ColourGradient (on.withAlpha (0.45f * level), c.x, c.y, on.withAlpha (0.0f), c.x + r * 4.0f, c.y, true));
+        g.fillEllipse (Rectangle<float> (r * 8.0f, r * 8.0f).withCentre (c));
+    }
+    g.setColour (Colours::white.withAlpha (0.55f));
+    g.fillEllipse (Rectangle<float> (r * 0.7f, r * 0.5f).withCentre (c.translated (-r * 0.35f, -r * 0.45f)));
+}
+
 void GristleEditor::drawPedal (juce::Graphics& g, juce::Rectangle<float> body, juce::Typeface::Ptr panelFace,
-                               juce::Typeface::Ptr scriptFace, bool withExtras, int wave, bool envelope, bool out)
+                               juce::Typeface::Ptr scriptFace, bool withExtras, int wave)
 {
     using namespace juce;
     const float u = body.getWidth() / 330.0f;
-    auto P = [&] (float x, float y) { return Point<float> (body.getX() + x * u, body.getY() + y * u); };
+    auto P = [body, u] (float x, float y) { return Point<float> (body.getX() + x * u, body.getY() + y * u); };
     auto F = [&] (float pt, float tr = 0.0f) { return faceFont (panelFace, pt * u, tr * u); };
 
     if (withExtras)
     {
-        // i due cavi che escono dalle prese sul lato corto in alto (instrument / amplifier)
+        // cavi nelle prese sul lato corto in alto (ingresso a sinistra, uscita a destra)
         for (float xx : { 86.0f, 244.0f })
         {
             const auto j = P (xx, 0);
@@ -580,7 +639,6 @@ void GristleEditor::drawPedal (juce::Graphics& g, juce::Rectangle<float> body, j
             g.strokePath (c, PathStrokeType (12 * u, PathStrokeType::curved, PathStrokeType::rounded));
             g.setColour (Colour (0xff35353a));
             g.strokePath (c, PathStrokeType (2.6f * u, PathStrokeType::curved, PathStrokeType::rounded), AffineTransform::translation (-3 * u, 0));
-            // spinotto
             const auto plug = Rectangle<float> (22 * u, 30 * u).withCentre (j.translated (0, -16 * u));
             g.setGradientFill (ColourGradient (Colour (0xff3a3a3e), plug.getX(), 0, Colour (0xff0a0a0b), plug.getRight(), 0, false));
             g.fillRoundedRectangle (plug, 4 * u);
@@ -589,75 +647,63 @@ void GristleEditor::drawPedal (juce::Graphics& g, juce::Rectangle<float> body, j
         }
     }
 
-    // scatola di plastica nera (si vede il bordo) con il pannello chiaro avvitato sopra
+    // scatola di alluminio verniciata a polvere
     g.setColour (Colours::black.withAlpha (0.45f));
-    g.fillRoundedRectangle (body.translated (4 * u, 8 * u), 12 * u);
-    g.setGradientFill (ColourGradient (Colour (0xff2a2a2c), body.getX(), body.getY(), Colour (0xff050505), body.getRight(), body.getBottom(), false));
-    g.fillRoundedRectangle (body, 12 * u);
-    g.setColour (Colour (0xff3c3c40));
-    g.drawRoundedRectangle (body.reduced (0.6f * u), 12 * u, 1.0f * u);
-
-    const auto plate = body.reduced (11 * u);
-    ColourGradient pg (plateLight, plate.getX(), plate.getY(), plateDark, plate.getRight(), plate.getBottom(), false);
-    pg.addColour (0.5, plateMid);
-    g.setGradientFill (pg);
-    g.fillRoundedRectangle (plate, 4 * u);
-    // leggera grana della vernice
+    g.fillRoundedRectangle (body.translated (4 * u, 9 * u), 16 * u);
+    ColourGradient eg (greyLight, body.getX(), body.getY(), greyDark, body.getRight(), body.getBottom(), false);
+    eg.addColour (0.5, greyMid);
+    g.setGradientFill (eg);
+    g.fillRoundedRectangle (body, 16 * u);
     {
-        Random rnd (7);
-        for (int i = 0; i < 900; ++i)
+        Random rnd (11);
+        for (int i = 0; i < 2400; ++i)
         {
-            const float xx = plate.getX() + rnd.nextFloat() * plate.getWidth(), yy = plate.getY() + rnd.nextFloat() * plate.getHeight();
-            g.setColour ((rnd.nextBool() ? Colours::black : Colours::white).withAlpha (0.035f));
-            g.fillRect (xx, yy, 1.2f * u, 1.2f * u);
+            const float xx = body.getX() + 4 * u + rnd.nextFloat() * (body.getWidth() - 8 * u);
+            const float yy = body.getY() + 4 * u + rnd.nextFloat() * (body.getHeight() - 8 * u);
+            g.setColour ((rnd.nextBool() ? Colours::black : Colours::white).withAlpha (0.05f));
+            g.fillRect (xx, yy, 1.1f * u, 1.1f * u);
         }
     }
-    g.setColour (Colours::white.withAlpha (0.7f));
-    g.drawLine (plate.getX() + 4 * u, plate.getY() + 0.8f * u, plate.getRight() - 4 * u, plate.getY() + 0.8f * u, 1.0f * u);
-    g.setColour (Colour (0xff8f8b80));
-    g.drawRoundedRectangle (plate, 4 * u, 0.8f * u);
-    for (auto s : { P (24, 24), P (306, 24), P (24, 516), P (306, 516) }) drawScrew (g, s, 4.2f * u);
+    g.setGradientFill (ColourGradient (Colours::white.withAlpha (0.35f), body.getX(), body.getY(),
+                                       Colours::white.withAlpha (0.0f), body.getX() + 60 * u, body.getY() + 60 * u, false));
+    g.drawRoundedRectangle (body.reduced (1.5f * u), 15 * u, 2.0f * u);
+    g.setColour (Colour (0xff6e7276));
+    g.drawRoundedRectangle (body, 16 * u, 1.0f * u);
 
     g.setColour (ink);
-    // prese: "instrument" (SK1, ingresso) e "amplifier" (SK2, uscita)
-    drawBaseline (g, F (13.0f, 0.4f), "instrument", P (86, 0).x, P (0, 46).y, Justification::horizontallyCentred);
-    drawBaseline (g, F (13.0f, 0.4f), "amplifier",  P (244, 0).x, P (0, 46).y, Justification::horizontallyCentred);
-
-    // manopole
-    drawBaseline (g, F (13.5f, 0.4f), "speed", P (speedX - 22, 0).x, P (0, speedY - 62).y, Justification::horizontallyCentred);
-    drawBaseline (g, F (13.5f, 0.4f), "depth", P (depthX + 6, 0).x,  P (0, depthY - 62).y, Justification::horizontallyCentred);
-
-    // posizioni di S1: i quattro simboli sull'arco, il selezionato pieno
+    // riga alta: BIAS, DEPTH, GAIN, LEVEL
+    const float labY = row1Y - 44.0f;
+    drawBaseline (g, F (12.0f, 0.6f), "BIAS",  P (biasX, 0).x,  P (0, labY).y, Justification::horizontallyCentred);
+    drawBaseline (g, F (12.0f, 0.6f), "DEPTH", P (depthX, 0).x, P (0, labY).y, Justification::horizontallyCentred);
+    drawBaseline (g, F (12.0f, 0.6f), "GAIN",  P (gainX, 0).x,  P (0, labY).y, Justification::horizontallyCentred);
+    drawBaseline (g, F (12.0f, 0.6f), "LEVEL", P (levelX, 0).x, P (0, labY).y, Justification::horizontallyCentred);
+    // seconda riga: SPEED, forma d'onda, VCA / VCF
+    drawBaseline (g, F (12.0f, 0.6f), "SPEED", P (speedX, 0).x, P (0, speedY - 44).y, Justification::horizontallyCentred);
     for (int i = 0; i < 4; ++i)
     {
         const float a = waveStart + (float) i / 3.0f * (waveEnd - waveStart);
-        const auto c = Point<float> (P (waveX, waveY)).getPointOnCircumference (74.0f * u, a);
-        g.setColour (ink.withAlpha (i == wave ? 1.0f : 0.55f));
-        drawWaveSymbol (g, i, c, 24.0f * u, (i == wave ? 2.0f : 1.4f) * u);
-        // tacca della posizione
-        g.drawLine (Line<float> (Point<float> (P (waveX, waveY)).getPointOnCircumference (60.0f * u, a),
-                                 Point<float> (P (waveX, waveY)).getPointOnCircumference (65.0f * u, a)), 1.4f * u);
+        const auto c = P (waveX, waveY).getPointOnCircumference (52.0f * u, a);
+        g.setColour (ink.withAlpha (i == wave ? 1.0f : 0.7f));
+        drawWaveSymbol (g, i, c, 19.0f * u, (i == wave ? 2.4f : 1.7f) * u);
     }
+    g.setColour (ink);
+    drawBaseline (g, F (12.0f, 0.6f), "VCA", P (modeX + 20, 0).x, P (0, modeY - 14).y, Justification::left);
+    drawBaseline (g, F (12.0f, 0.6f), "VCF", P (modeX + 20, 0).x, P (0, modeY + 26).y, Justification::left);
 
-    // interruttori a pedale: la parola della posizione attiva è piena, l'altra attenuata
-    {
-        g.setColour (ink.withAlpha (envelope ? 0.45f : 1.0f));
-        drawBaseline (g, F (13.0f, 0.4f), "filter",   P (modeX, 0).x, P (0, modeY - 36).y, Justification::horizontallyCentred);
-        g.setColour (ink.withAlpha (envelope ? 1.0f : 0.45f));
-        drawBaseline (g, F (13.0f, 0.4f), "envelope", P (modeX, 0).x, P (0, modeY + 48).y, Justification::horizontallyCentred);
-        g.setColour (ink.withAlpha (out ? 0.45f : 1.0f));
-        drawBaseline (g, F (13.0f, 0.4f), "in",  P (inX, 0).x, P (0, inY - 36).y, Justification::horizontallyCentred);
-        g.setColour (ink.withAlpha (out ? 1.0f : 0.45f));
-        drawBaseline (g, F (13.0f, 0.4f), "out", P (inX, 0).x, P (0, inY + 48).y, Justification::horizontallyCentred);
-    }
+    // riquadro con il nome, attraversato dalla scintilla
+    const Rectangle<float> box (P (26, 290), P (236, 350));
+    g.setColour (ink);
+    g.drawRect (box, 2.2f * u);
+    drawBaseline (g, F (21.0f, 0.4f), "Cartilagine", P (38, 0).x, P (0, 329).y, Justification::left);
+    for (auto [line, yy] : { std::pair<const char*, float> { "MODULATORE", 374.0f }, { "A TENSIONE", 388.0f }, { "DI CONTROLLO", 402.0f } })
+        drawBaseline (g, F (9.0f, 0.5f), line, P (36, 0).x, P (0, yy).y, Justification::left);
+    g.fillPath (sparkPath (P, u));
 
-    // marchio (in basso a destra) e nome del plugin sotto le prese
+    // marchio
     g.setColour (ink.withAlpha (0.85f));
     if (scriptFace != nullptr)
-        drawBaseline (g, Font (FontOptions (scriptFace).withPointHeight (20.0f * u)), "Collateral", P (288, 0).x, P (0, 498).y, Justification::right);
-    drawBaseline (g, F (7.5f, 2.2f), "EFFECTS", P (288, 0).x, P (0, 511).y, Justification::right);
-    g.setColour (ink.withAlpha (0.5f));
-    drawBaseline (g, F (8.5f, 2.6f), "cartilagine", P (42, 0).x, P (0, 511).y, Justification::left);
+        drawBaseline (g, Font (FontOptions (scriptFace).withPointHeight (20.0f * u)), "Collateral", P (300, 0).x, P (0, 498).y, Justification::right);
+    drawBaseline (g, F (7.0f, 2.2f), "EFFECTS", P (300, 0).x, P (0, 512).y, Justification::right);
 }
 
 juce::Image GristleEditor::createAppIcon (int size)
@@ -669,23 +715,18 @@ juce::Image GristleEditor::createAppIcon (int size)
     const auto body = Rectangle<float> (100 * u, 100 * u, 824 * u, 824 * u);
     Path bodyPath; bodyPath.addRoundedRectangle (body, 185.0f * u);
     DropShadow (Colours::black.withAlpha (0.5f), roundToInt (28 * u), { 0, roundToInt (12 * u) }).drawForPath (g, bodyPath);
-    g.setGradientFill (ColourGradient (Colour (0xff2a2a2c), body.getX(), body.getY(), Colour (0xff050505), body.getRight(), body.getBottom(), false));
+    ColourGradient eg (greyLight, body.getX(), body.getY(), greyDark, body.getRight(), body.getBottom(), false);
+    eg.addColour (0.5, greyMid);
+    g.setGradientFill (eg);
     g.fillPath (bodyPath);
-    Path platePath; platePath.addRoundedRectangle (body.reduced (40 * u), 150.0f * u);
-    ColourGradient pg (plateLight, body.getX(), body.getY(), plateDark, body.getRight(), body.getBottom(), false);
-    pg.addColour (0.5, plateMid);
-    g.setGradientFill (pg);
-    g.fillPath (platePath);
-
-    PedalLookAndFeel::drawPedalKnob (g, { 512 * u, 440 * u }, 3.4f * u, 0.7f);
+    g.setColour (Colour (0xff6e7276));
+    g.strokePath (bodyPath, PathStrokeType (4.0f * u));
+    // la scintilla in grande, con una manopola
+    const float s = 2.6f * u;
+    auto P = [s, u] (float x, float y) { return Point<float> ((x - 248.0f) * s + 600.0f * u, (y - 368.0f) * s + 540.0f * u); };
     g.setColour (ink);
-    for (int i = 0; i < 4; ++i)
-    {
-        const float a = waveStart + (float) i / 3.0f * (waveEnd - waveStart);
-        drawWaveSymbol (g, i, Point<float> (512 * u, 440 * u).getPointOnCircumference (230 * u, a), 80 * u, 9 * u);
-    }
-    auto face = Typeface::createSystemTypefaceFor (BinaryData::QuestrialRegular_ttf, BinaryData::QuestrialRegular_ttfSize);
-    drawBaseline (g, faceFont (face, 120.0f * u, 2.0f * u), "gristle", 512 * u, 830 * u, Justification::horizontallyCentred);
+    g.fillPath (sparkPath (P, s));
+    PedalLookAndFeel::drawPedalKnob (g, { 330 * u, 360 * u }, 2.4f * u, 0.6f);
     return img;
 }
 
@@ -695,8 +736,8 @@ GristleEditor::GristleEditor (GristleProcessor& p)
 {
     setLookAndFeel (&lnf);
     scriptFace = juce::Typeface::createSystemTypefaceFor (BinaryData::YellowtailRegular_ttf, BinaryData::YellowtailRegular_ttfSize);
-    panelFace  = juce::Typeface::createSystemTypefaceFor (BinaryData::QuestrialRegular_ttf, BinaryData::QuestrialRegular_ttfSize);
     uiFace     = juce::Typeface::createSystemTypefaceFor (BinaryData::ArchivoBlackRegular_ttf, BinaryData::ArchivoBlackRegular_ttfSize);
+    panelFace  = uiFace;
 
     auto setupKnob = [this] (LearnableSlider& s, const char* id, bool small)
     {
@@ -717,6 +758,9 @@ GristleEditor::GristleEditor (GristleProcessor& p)
     setupKnob (speed,   ParamIDs::speed,  false);
     setupKnob (depth,   ParamIDs::depth,  false);
     setupKnob (wave,    ParamIDs::wave,   false);
+    setupKnob (bias,    ParamIDs::bias,   false);
+    setupKnob (gain,    ParamIDs::gain,   false);
+    setupKnob (level,   ParamIDs::level,  false);
     setupKnob (inTrim,  ParamIDs::input,  true);
     setupKnob (outTrim, ParamIDs::output, true);
     setupKnob (gtrVol,  ParamIDs::gtrVol, true);
@@ -725,19 +769,25 @@ GristleEditor::GristleEditor (GristleProcessor& p)
     speed.setTooltip (juce::String::fromUTF8 ("SPEED (VR1, 10k log): velocit\xc3\xa0 dell'oscillatore, da circa 0,1 a 90 Hz. Clic destro: MIDI Learn"));
     depth.setTooltip ("DEPTH (VR4, 10k lin): quanta forma d'onda arriva al gate del JFET. Clic destro: MIDI Learn");
     wave.setTooltip ("Forma d'onda (S1): rampa che sale, rampa che scende, triangolo, quadra. Clic destro: MIDI Learn");
+    bias.setTooltip ("BIAS (VR5 sul pannello): polarizzazione del gate del JFET, cio\xc3\xa8 il centro della spazzata del filtro e il volume medio del VCA. Clic destro: MIDI Learn");
+    gain.setTooltip ("GAIN (pot al posto di R21): guadagno di IC4, da x1 a x11 (a fondo corsa come l'originale). Pi\xc3\xb9 guadagno, pi\xc3\xb9 saturazione. Clic destro: MIDI Learn");
+    level.setTooltip ("LEVEL (VR6 sul pannello, log): volume d'uscita dell'effetto. Clic destro: MIDI Learn");
     gtrVol.setTooltip ("Volume della chitarra (pot logaritmico). Clic destro: MIDI Learn");
 
     speedA = std::make_unique<SA> (proc.apvts, ParamIDs::speed,  speed);
     depthA = std::make_unique<SA> (proc.apvts, ParamIDs::depth,  depth);
     waveA  = std::make_unique<SA> (proc.apvts, ParamIDs::wave,   wave);
+    biasA  = std::make_unique<SA> (proc.apvts, ParamIDs::bias,   bias);
+    gainA  = std::make_unique<SA> (proc.apvts, ParamIDs::gain,   gain);
+    levelA = std::make_unique<SA> (proc.apvts, ParamIDs::level,  level);
     inA    = std::make_unique<SA> (proc.apvts, ParamIDs::input,  inTrim);
     outA   = std::make_unique<SA> (proc.apvts, ParamIDs::output, outTrim);
     gtrA   = std::make_unique<SA> (proc.apvts, ParamIDs::gtrVol, gtrVol);
 
     modeSw.onLearnMenu   = [this] { showLearnMenu (GristleProcessor::idxMode, &modeSw); };
     bypassSw.onLearnMenu = [this] { showLearnMenu (GristleProcessor::idxBypass, &bypassSw); };
-    modeSw.setTooltip ("FILTER / ENVELOPE (S2): filtro passa-banda che si sposta, oppure amplificatore controllato (tremolo). Clic destro: MIDI Learn");
-    bypassSw.setTooltip ("IN / OUT (S3): effetto inserito o segnale diretto. Clic destro: MIDI Learn");
+    modeSw.setTooltip ("VCA / VCF (S2): amplificatore controllato (tremolo) o filtro passa-banda che si sposta. Clic destro: MIDI Learn");
+    bypassSw.setTooltip ("Bypass (S3): effetto inserito (LED acceso) o segnale diretto. Clic destro: MIDI Learn");
     addAndMakeVisible (modeSw);
     addAndMakeVisible (bypassSw);
     modeA   = std::make_unique<BA> (proc.apvts, ParamIDs::mode,   modeSw);
@@ -755,7 +805,7 @@ GristleEditor::GristleEditor (GristleProcessor& p)
     interior->onClose = [this] { interior->setVisible (false); interiorBtn.setToggleState (false, juce::dontSendNotification); };
     addChildComponent (*interior);
     interiorBtn.setClickingTogglesState (true);
-    interiorBtn.setTooltip ("Apre l'interno del pedale: i quattro trimmer della taratura, le batterie, il JFET");
+    interiorBtn.setTooltip ("Apre l'interno del pedale: i trimmer del triangolo, oscilloscopio e spazzata misurata, batterie, JFET");
     interiorBtn.setColour (juce::TextButton::buttonOnColourId, accent);
     interiorBtn.onClick = [this] { interior->setVisible (interiorBtn.getToggleState()); interior->toFront (false); };
     addAndMakeVisible (interiorBtn);
@@ -830,10 +880,13 @@ void GristleEditor::resized()
 
     // pedale
     const float px = pedalBody.getX(), py = pedalBody.getY();
+    place (bias,     px + biasX,  py + row1Y, knobSize, knobSize);
+    place (depth,    px + depthX, py + row1Y, knobSize, knobSize);
+    place (gain,     px + gainX,  py + row1Y, knobSize, knobSize);
+    place (level,    px + levelX, py + row1Y, knobSize, knobSize);
     place (speed,    px + speedX, py + speedY, knobSize, knobSize);
-    place (depth,    px + depthX, py + depthY, knobSize, knobSize);
     place (wave,     px + waveX,  py + waveY,  knobSize, knobSize);
-    place (modeSw,   px + modeX,  py + modeY,  switchSize, switchSize);
+    place (modeSw,   px + modeX,  py + modeY,  40.0f, 58.0f);
     place (bypassSw, px + inX,    py + inY,    switchSize, switchSize);
 
     renderBackground();
@@ -850,10 +903,8 @@ void GristleEditor::renderBackground()
     g.setGradientFill (ColourGradient (Colour (0xff1e1e20), 0, pedalY, Colour (0xff09090a), 0, (float) baseH, false));
     g.fillRect (0.0f, 0.0f, (float) baseW, (float) baseH);
 
-    const bool env = proc.apvts.getRawParameterValue (ParamIDs::mode)->load() > 0.5f;
-    const bool out = proc.apvts.getRawParameterValue (ParamIDs::bypass)->load() > 0.5f;
     const int w = (int) proc.apvts.getRawParameterValue (ParamIDs::wave)->load();
-    drawPedal (g, pedalBody, panelFace, scriptFace, true, w, env, out);
+    drawPedal (g, pedalBody, panelFace, scriptFace, true, w);
 
     // barra di servizio (non fa parte del pedale)
     g.setColour (stripCol);
@@ -874,6 +925,11 @@ void GristleEditor::paint (juce::Graphics& g)
     using namespace juce;
     g.drawImageAt (background, 0, 0);
     g.addTransform (AffineTransform::scale (scale));
+
+    // LED: velocità (segue la forma d'onda, come nei pedali autocostruiti) e effetto inserito
+    const float px = pedalBody.getX(), py = pedalBody.getY();
+    drawLed (g, { px + rateLedX, py + rateLedY }, 4.2f, lastRateLed);
+    drawLed (g, { px + inLedX, py + inLedY }, 4.2f, lastInLed ? 1.0f : 0.0f);
 
     // display MIDI
     const Rectangle<float> disp (76.0f, 8.0f, 216.0f, 44.0f);
@@ -927,6 +983,9 @@ juce::Component* GristleEditor::controlFor (int idx)
         case GristleProcessor::idxWave:   return &wave;
         case GristleProcessor::idxMode:   return &modeSw;
         case GristleProcessor::idxBypass: return &bypassSw;
+        case GristleProcessor::idxBias:   return &bias;
+        case GristleProcessor::idxGain:   return &gain;
+        case GristleProcessor::idxLevel:  return &level;
         case GristleProcessor::idxInput:  return &inTrim;
         case GristleProcessor::idxOutput: return &outTrim;
         case GristleProcessor::idxGtrVol: return &gtrVol;
@@ -953,15 +1012,19 @@ void GristleEditor::timerCallback()
         gtrVol.setEnabled (hasPots);
         gtrVol.setAlpha (hasPots ? 1.0f : 0.35f);
     }
-    // le scritte del pannello seguono S1, S2 e S3
-    const bool env = proc.apvts.getRawParameterValue (ParamIDs::mode)->load() > 0.5f;
-    const bool out = proc.apvts.getRawParameterValue (ParamIDs::bypass)->load() > 0.5f;
+    // i simboli di S1 seguono la posizione
     const int w = (int) proc.apvts.getRawParameterValue (ParamIDs::wave)->load();
-    if (w != lastWave || env != lastEnv || out != lastOut)
+    if (w != lastWave) { lastWave = w; renderBackground(); repaint(); }
+
+    // LED
+    const bool on = proc.apvts.getRawParameterValue (ParamIDs::bypass)->load() < 0.5f;
+    const float rate = on && proc.running.load() ? juce::jlimit (0.0f, 1.0f, proc.ledLevel.load() / 1.5f) : 0.0f;
+    if (on != lastInLed || std::abs (rate - lastRateLed) > 0.02f)
     {
-        lastWave = w; lastEnv = env; lastOut = out;
-        renderBackground();
-        repaint();
+        lastInLed = on; lastRateLed = rate;
+        const float px = pedalBody.getX(), py = pedalBody.getY();
+        repaint (base (px + rateLedX - 20, py + rateLedY - 20, 40, 40).toNearestInt());
+        repaint (base (px + inLedX - 20, py + inLedY - 20, 40, 40).toNearestInt());
     }
     if (learn >= 0 || learn != lastLearn || mv != lastMapVersion || cnt != lastCCCount)
     {

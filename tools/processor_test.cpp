@@ -38,7 +38,7 @@ int main()
     for (int b = 0; b < 200; ++b) { fill (0.2f); rIn = rms(); p.processBlock (buf, none); rOut = rms(); finite &= std::isfinite (rOut); }
     std::printf ("ingresso %.3f rms, uscita %.3f rms (FILTER, triangolo)\n", rIn, rOut);
     check (finite && rOut > 0.005f, "audio elaborato, nessun NaN");
-    check (rOut < 4.0f * rIn && rOut > 0.1f * rIn, "VR6 tarato: l'effetto esce a un livello vicino a quello diretto");
+    check (rOut < 10.0f * rIn && rOut > 0.1f * rIn, "LEVEL predefinito (-6 dB): livello d'uscita ragionevole");
 
     // CC 74 -> SPEED, CC 71 -> DEPTH, CC 76 -> forma d'onda
     juce::MidiBuffer m;
@@ -81,27 +81,27 @@ int main()
     for (int b = 0; b < 40; ++b) { fill (0.2f); p.processBlock (buf, none); finite &= std::isfinite (rms()); }
     check (finite && rms() > 0.001f, "IN: il circuito riparte");
 
-    // MIDI Learn: CC 20 su VR5 (SET BIAS)
-    p.startLearn (GristleProcessor::idxVr5);
+    // MIDI Learn: CC 20 su BIAS
+    p.startLearn (GristleProcessor::idxBias);
     m.clear(); m.addEvent (juce::MidiMessage::controllerEvent (1, 20, 64), 0);
     fill (0.2f); p.processBlock (buf, m); pump (50);
-    check (p.getCCForParam (GristleProcessor::idxVr5) == 20 && p.getLearningParam() < 0, "MIDI Learn: CC 20 assegnato a VR5");
+    check (p.getCCForParam (GristleProcessor::idxBias) == 20 && p.getLearningParam() < 0, "MIDI Learn: CC 20 assegnato a BIAS");
     m.clear(); m.addEvent (juce::MidiMessage::controllerEvent (1, 20, 0), 0);
     fill (0.2f); p.processBlock (buf, m); pump (100);
-    check (value (p, ParamIDs::vr5) < 0.01f, "CC 20 muove VR5");
+    check (value (p, ParamIDs::bias) < 0.01f, "CC 20 muove BIAS");
 
     // stato salvato e ricaricato
     juce::MemoryBlock state; p.getStateInformation (state);
     GristleProcessor q;
     q.setStateInformation (state.getData(), (int) state.getSize());
-    check (q.getCCForParam (GristleProcessor::idxVr5) == 20 && q.getCCForParam (GristleProcessor::idxSpeed) == 74,
+    check (q.getCCForParam (GristleProcessor::idxBias) == 20 && q.getCCForParam (GristleProcessor::idxSpeed) == 74,
            "stato: mappa MIDI e parametri ricaricati");
-    check (std::abs (value (q, ParamIDs::vr5) - value (p, ParamIDs::vr5)) < 1e-6f && (int) value (q, ParamIDs::wave) == 3,
+    check (std::abs (value (q, ParamIDs::bias) - value (p, ParamIDs::bias)) < 1e-6f && (int) value (q, ParamIDs::wave) == 3,
            "stato: trimmer e forma d'onda ricaricati");
 
     // CPU a 48 kHz
     {
-        p.apvts.getParameter (ParamIDs::vr5)->setValueNotifyingHost (p.apvts.getParameter (ParamIDs::vr5)->convertTo0to1 ((float) grz::Trim::vr5));
+        p.apvts.getParameter (ParamIDs::bias)->setValueNotifyingHost (p.apvts.getParameter (ParamIDs::bias)->convertTo0to1 ((float) grz::PanelMod::biasKnob));
         pump (50);
         const int blocks = (int) (sr * 4 / bs);
         auto t0 = std::chrono::steady_clock::now();

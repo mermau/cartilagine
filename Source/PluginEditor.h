@@ -17,7 +17,7 @@ public:
     {
         return juce::Font (juce::FontOptions (juce::jmin (15.0f, (float) buttonHeight * 0.34f), juce::Font::bold));
     }
-    // manopola del pedale: cilindro nero con la croce chiara sul cappellotto
+    // manopola del pedale: nera zigrinata con la linea bianca
     static void drawPedalKnob (juce::Graphics&, juce::Point<float> c, float k, float angle);
 };
 
@@ -42,6 +42,18 @@ public:
     void mouseDown (const juce::MouseEvent& e) override;
     void mouseUp (const juce::MouseEvent& e) override { if (! e.mods.isPopupMenu()) Button::mouseUp (e); }
     static void drawStomp (juce::Graphics&, juce::Rectangle<float> b, bool down, bool highlighted);
+};
+
+// Deviatore a levetta VCA / VCF (stato = parametro "mode": true = VCA in alto)
+class ToggleSwitch : public juce::Button
+{
+public:
+    ToggleSwitch() : juce::Button ("Toggle") { setClickingTogglesState (true); }
+    std::function<void()> onLearnMenu;
+    void paintButton (juce::Graphics&, bool highlighted, bool down) override;
+    void mouseDown (const juce::MouseEvent& e) override;
+    void mouseUp (const juce::MouseEvent& e) override { if (! e.mods.isPopupMenu()) Button::mouseUp (e); }
+    static void drawToggle (juce::Graphics&, juce::Rectangle<float> b, bool up, bool highlighted);
 };
 
 //==============================================================================
@@ -70,9 +82,9 @@ private:
 
     GristleProcessor& proc;
     juce::Typeface::Ptr face;
-    LearnableSlider vr2, vr3, vr5, vr6, battery, vp;
+    LearnableSlider vr2, vr3, battery, vp;
     juce::TextButton resetBtn { "TARATURA ORIGINALE" }, closeBtn { "CHIUDI" };
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> vr2A, vr3A, vr5A, vr6A, batA, vpA;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> vr2A, vr3A, batA, vpA;
     float k = 1.0f;
     std::vector<float> trace;
 };
@@ -92,18 +104,23 @@ public:
     static juce::Image createAppIcon (int size);
     // disegno del pedale (senza manopole e interruttori), coordinate di progetto
     static void drawPedal (juce::Graphics&, juce::Rectangle<float> body, juce::Typeface::Ptr panelFace,
-                           juce::Typeface::Ptr scriptFace, bool withExtras, int wave, bool envelope, bool out);
+                           juce::Typeface::Ptr scriptFace, bool withExtras, int wave);
+    // i due LED (velocità e IN), disegnati sopra lo sfondo
+    static void drawLed (juce::Graphics&, juce::Point<float> c, float r, float level);
 
     // coordinate di progetto: barra di servizio 0-96, pedale sotto
     static constexpr int baseW = 420, baseH = 780;
     static constexpr float pedalY = 96.0f;
-    // posizioni nel pedale (330 x 540)
-    static constexpr float speedX = 92.0f,  speedY = 212.0f;
-    static constexpr float depthX = 238.0f, depthY = 142.0f;
-    static constexpr float waveX  = 196.0f, waveY  = 300.0f;
-    static constexpr float modeX  = 250.0f, modeY  = 396.0f;
-    static constexpr float inX    = 112.0f, inY    = 444.0f;
-    static constexpr float knobSize = 112.0f, waveSize = 120.0f, switchSize = 56.0f;
+    // posizioni nel pedale (330 x 540), disposizione dei Gristleizer autocostruiti
+    static constexpr float row1Y = 112.0f;
+    static constexpr float biasX = 60.0f, depthX = 134.0f, gainX = 208.0f, levelX = 282.0f;
+    static constexpr float speedX = 70.0f,  speedY = 222.0f;
+    static constexpr float waveX  = 168.0f, waveY  = 222.0f;
+    static constexpr float modeX  = 254.0f, modeY  = 222.0f;
+    static constexpr float rateLedX = 34.0f, rateLedY = 266.0f;
+    static constexpr float inX    = 116.0f, inY    = 474.0f;
+    static constexpr float inLedX = 58.0f,  inLedY = 452.0f;
+    static constexpr float knobSize = 86.0f, switchSize = 58.0f;
 
 private:
     void timerCallback() override;
@@ -125,14 +142,15 @@ private:
     GristleProcessor& proc;
     PedalLookAndFeel lnf;
 
-    LearnableSlider speed, depth, wave, inTrim, outTrim, gtrVol;
-    FootSwitch modeSw, bypassSw;
+    LearnableSlider speed, depth, wave, bias, gain, level, inTrim, outTrim, gtrVol;
+    ToggleSwitch modeSw;
+    FootSwitch bypassSw;
     juce::ComboBox pickupBox;
     juce::Slider pickR, pickL;
 
     using SA = juce::AudioProcessorValueTreeState::SliderAttachment;
     using BA = juce::AudioProcessorValueTreeState::ButtonAttachment;
-    std::unique_ptr<SA> speedA, depthA, waveA, inA, outA, gtrA, pickRA, pickLA;
+    std::unique_ptr<SA> speedA, depthA, waveA, biasA, gainA, levelA, inA, outA, gtrA, pickRA, pickLA;
     std::unique_ptr<BA> modeA, bypassA;
     juce::TextButton pickupMenuBtn { juce::String::fromUTF8 ("\xe2\x80\xa6") };
     juce::TextButton interiorBtn { "INTERNO" };
@@ -146,6 +164,7 @@ private:
     juce::Image background;
     float scale = 1.0f;
     int lastLearn = -2, lastMapVersion = -1, lastCCCount = -1;
-    int lastWave = -1; bool lastEnv = false, lastOut = false;
+    int lastWave = -1;
+    float lastRateLed = -1.0f; bool lastInLed = false;
     float pulse = 0.0f;
 };

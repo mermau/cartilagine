@@ -129,6 +129,17 @@ struct Trim
     static constexpr double vr6 = 0.0630;   // LEVEL: effetto allo stesso volume del segnale diretto (−24 dB)
 };
 
+// Versione "da pannello" (come nei Gristleizer autocostruiti di oggi): BIAS e LEVEL diventano
+// manopole, GAIN sostituisce R21. BIAS = VR5 con 220k verso +9 V, che limita la corsa alla zona
+// utile; LEVEL = pot logaritmico; GAIN = pot 100k log al posto di R21 (a fondo corsa = originale).
+struct PanelMod
+{
+    static constexpr double biasTop = 220e3;
+    static constexpr double biasKnob = 0.268;   // stesso gate della taratura di VR5 (−2,46 V a DEPTH zero)
+    static constexpr double levelKnob = 0.845;  // pot log: −6 dB
+    static constexpr double gainKnob = 1.0;     // guadagno 11, come R21
+};
+
 //==============================================================================
 namespace detail
 {
@@ -326,7 +337,7 @@ public:
         fs = sampleRate; T = 1.0 / fs;
         input.prepare (fs);
         dcBlock.setCutoff (4.0, fs);
-        ic4Coef = 1.0 - std::exp (-2.0 * kPi * OpAmp741::GBW / 11.0 * T);
+        ic4Coef = 1.0 - std::exp (-2.0 * kPi * OpAmp741::GBW / ic4Gain * T);
         // LFO, forme d'onda e TR1 girano a circa 96 kHz (i fronti più ripidi, il ritorno della
         // rampa e lo slew dei 741, durano comunque decine di µs) e il CV viene interpolato
         lfoDiv = std::max (1, (int) std::lround (fs / 96000.0));
@@ -345,6 +356,16 @@ public:
     {
         t2 = std::clamp (vr2, 0.0, 1.0); t3 = std::clamp (vr3, 0.0, 1.0);
         t5 = std::clamp (vr5, 0.0, 1.0); t6 = std::clamp (vr6, 0.0, 1.0);
+    }
+    // resistenza tra la cima di VR5 e +V (0 = schema originale)
+    void setBiasTop (double ohms) { biasTop = std::max (0.0, ohms); }
+    // GAIN: pot 100k log al posto di R21 (posizione 0..1; 1 = 100k, guadagno 11 come l'originale)
+    void setGain (double x01)
+    {
+        const double g = 1.0 + Components::R21 * detail::logTaper (std::clamp (x01, 0.0, 1.0)) / Components::R20;
+        if (std::abs (g - ic4Gain) < 1e-9) return;
+        ic4Gain = g;
+        ic4Coef = 1.0 - std::exp (-2.0 * kPi * OpAmp741::GBW / ic4Gain * T);
     }
     void setSupply (double volts) { vbat = std::clamp (volts, 3.0, 12.0); }   // le due PP3
     void setJfetVto (double v)    { vto = std::clamp (v, -8.0, -0.3); }        // dispersione del 2N3819
@@ -409,6 +430,7 @@ public:
     double ramp() const      { return vr; }            // uscita di IC1
     double waveOut() const   { return vsrc; }          // forma d'onda su VR4 (sorgente)
     double cvX() const       { return vx; }            // cursore di DEPTH (Thevenin)
+    double ledDrive() const  { return vsrc; }          // il LED della velocità segue la forma d'onda
     double gate() const      { return x[iG]; }
     double drain() const     { return x[iD]; }
     double ic5() const       { return sat (x[iU]); }
@@ -454,7 +476,7 @@ private:
     // IC4: guadagno 11, banda GBW/11, slew rate, saturazione
     inline void ic4Step (double vin)
     {
-        const double target = (1.0 + Components::R21 / Components::R20) * vin;
+        const double target = ic4Gain * vin;
         double d = (target - ic4lin) * ic4Coef;
         const double lim = OpAmp741::SR * T;
         d = std::clamp (d, -lim, lim);
@@ -572,8 +594,10 @@ private:
         const double a = depth, Rp = C::VR4;
         vx = vsrc * a * Rp / (rsrc + Rp);
         rx = C::R15 + a * Rp * (rsrc + (1.0 - a) * Rp) / (rsrc + Rp);
-        vb5 = -vbat + t5 * 2.0 * vbat;
-        rb5 = C::R17 + C::VR5 * t5 * (1.0 - t5);
+        // VR5 tra −V e (con la modifica da pannello) una resistenza verso +V: Thevenin del cursore
+        const double rp = C::VR5;
+        vb5 = -vbat + 2.0 * vbat * t5 * rp / (rp + biasTop);
+        rb5 = C::R17 + t5 * rp * ((1.0 - t5) * rp + biasTop) / (rp + biasTop);
     }
 
     //==========================================================================
@@ -832,7 +856,7 @@ private:
     int wave = triangle;
     bool filterMode = true, be = false;
     double t2 = Trim::vr2, t3 = Trim::vr3, t5 = Trim::vr5, t6 = Trim::vr6;
-    double vbat = 9.0, vto = JFET::vto, theta = 0.55;
+    double vbat = 9.0, vto = JFET::vto, theta = 0.55, biasTop = 0.0, ic4Gain = 11.0;
 
     // LFO e forme d'onda
     double vr = -1.7, v2 = -8.0, v3 = 0.0, d1Guess = 0.0;

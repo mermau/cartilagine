@@ -3,8 +3,9 @@
 
 const std::array<const char*, GristleProcessor::numLearnable> GristleProcessor::learnableIDs {
     ParamIDs::speed, ParamIDs::depth, ParamIDs::wave, ParamIDs::mode, ParamIDs::bypass,
+    ParamIDs::bias, ParamIDs::gain, ParamIDs::level,
     ParamIDs::input, ParamIDs::output, ParamIDs::gtrVol,
-    ParamIDs::vr2, ParamIDs::vr3, ParamIDs::vr5, ParamIDs::vr6, ParamIDs::battery, ParamIDs::jfetVp
+    ParamIDs::vr2, ParamIDs::vr3, ParamIDs::battery, ParamIDs::jfetVp
 };
 
 //==============================================================================
@@ -36,6 +37,16 @@ juce::AudioProcessorValueTreeState::ParameterLayout GristleProcessor::createLayo
     layout.add (std::make_unique<AudioParameterChoice> (ParameterID { ParamIDs::mode, 1 }, "Filter / Envelope",
         StringArray { "Filter", "Envelope" }, 0));
     layout.add (std::make_unique<AudioParameterBool> (ParameterID { ParamIDs::bypass, 1 }, "Out (Bypass)", false));
+    layout.add (std::make_unique<AudioParameterFloat> (ParameterID { ParamIDs::bias, 1 }, "Bias",
+        NormalisableRange<float> (0.0f, 1.0f), (float) grz::PanelMod::biasKnob, AudioParameterFloatAttributes().withStringFromValueFunction (knob)));
+    layout.add (std::make_unique<AudioParameterFloat> (ParameterID { ParamIDs::gain, 1 }, "Gain",
+        NormalisableRange<float> (0.0f, 1.0f), (float) grz::PanelMod::gainKnob,
+        AudioParameterFloatAttributes().withStringFromValueFunction ([] (float v, int)
+        { return String::fromUTF8 ("\xc3\x97") + String (1.0 + 10.0 * grz::detail::logTaper (v), 1); })));
+    layout.add (std::make_unique<AudioParameterFloat> (ParameterID { ParamIDs::level, 1 }, "Level",
+        NormalisableRange<float> (0.0f, 1.0f), (float) grz::PanelMod::levelKnob,
+        AudioParameterFloatAttributes().withStringFromValueFunction ([] (float v, int)
+        { return String (Decibels::gainToDecibels ((float) grz::detail::logTaper (v), -80.0f), 1) + " dB"; })));
 
     layout.add (trim (ParamIDs::input,  "Input Trim"));
     layout.add (trim (ParamIDs::output, "Output Trim"));
@@ -52,8 +63,6 @@ juce::AudioProcessorValueTreeState::ParameterLayout GristleProcessor::createLayo
     // interno: i quattro trimmer (posizione del cursore), batterie, JFET
     layout.add (trimmer (ParamIDs::vr2, "VR2 Triangle Shaping", grz::Trim::vr2));
     layout.add (trimmer (ParamIDs::vr3, "VR3 Triangle Offset",  grz::Trim::vr3));
-    layout.add (trimmer (ParamIDs::vr5, "VR5 Set Bias",         grz::Trim::vr5));
-    layout.add (trimmer (ParamIDs::vr6, "VR6 Level",            grz::Trim::vr6));
     layout.add (std::make_unique<AudioParameterFloat> (ParameterID { ParamIDs::battery, 1 }, "Batteries",
         NormalisableRange<float> ((float) Battery::minV, (float) Battery::fullV, 0.01f), (float) Battery::nominalV,
         AudioParameterFloatAttributes().withLabel ("V").withStringFromValueFunction ([] (float v, int) { return String (v, 2); })));
@@ -83,7 +92,8 @@ GristleProcessor::GristleProcessor()
     batteryRaw = apvts.getRawParameterValue (ParamIDs::battery);
     vpRaw      = apvts.getRawParameterValue (ParamIDs::jfetVp);
     trimRaw    = { apvts.getRawParameterValue (ParamIDs::vr2), apvts.getRawParameterValue (ParamIDs::vr3),
-                   apvts.getRawParameterValue (ParamIDs::vr5), apvts.getRawParameterValue (ParamIDs::vr6) };
+                   apvts.getRawParameterValue (ParamIDs::bias), apvts.getRawParameterValue (ParamIDs::level),
+                   apvts.getRawParameterValue (ParamIDs::gain) };
     bypassParam = dynamic_cast<juce::AudioParameterBool*> (apvts.getParameter (ParamIDs::bypass));
 
     for (int i = 0; i < numLearnable; ++i)
@@ -101,11 +111,13 @@ GristleProcessor::GristleProcessor()
 void GristleProcessor::resetDefaultMappings()
 {
     for (auto& m : ccToParam) m.store (-1);
-    // KeyLab mkII in modalità User: encoder 1-4 = CC 74, 71, 76, 77
+    // KeyLab mkII in modalità User: encoder 1-6 = CC 74, 71, 76, 77, 93, 18
     ccToParam[74].store (idxSpeed);
     ccToParam[71].store (idxDepth);
     ccToParam[76].store (idxWave);
-    ccToParam[77].store (idxVr5);       // SET BIAS: sposta il centro della spazzata
+    ccToParam[77].store (idxBias);      // sposta il centro della spazzata
+    ccToParam[93].store (idxGain);
+    ccToParam[18].store (idxLevel);
     // pedali: sustain (64) = IN/OUT, CC 65 = FILTER/ENVELOPE (commutano alla pressione)
     ccToParam[64].store (idxBypass);
     ccToParam[65].store (idxMode);
@@ -197,6 +209,13 @@ grz::Pickup GristleProcessor::pickupFor (int choice, float rKohm, float lHenry)
     }
 }
 
+// VR2, VR3 (trimmer interni), BIAS (VR5 + 220k), LEVEL (VR6, pot log), GAIN (al posto di R21)
+void GristleProcessor::applyTrims (float vr2, float vr3, float bias, float level, float gain)
+{
+    circuit.setTrimmers (vr2, vr3, bias, grz::detail::logTaper (level));
+    circuit.setGain (gain);
+}
+
 grz::Pickup GristleProcessor::currentPickup() const
 {
     return pickupFor ((int) pickupRaw->load(), pickRRaw->load(), pickLRaw->load());
@@ -232,7 +251,8 @@ void GristleProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     circuit.setFilter (modeRaw->load() < 0.5f);
     circuit.setSupply (batteryRaw->load());
     circuit.setJfetVto (vpRaw->load());
-    circuit.setTrimmers (trimRaw[0]->load(), trimRaw[1]->load(), trimRaw[2]->load(), trimRaw[3]->load());
+    circuit.setBiasTop (grz::PanelMod::biasTop);
+    applyTrims (trimRaw[0]->load(), trimRaw[1]->load(), trimRaw[2]->load(), trimRaw[3]->load(), trimRaw[4]->load());
     circuit.prepare (sampleRate * (double) oversampling->getOversamplingFactor());
 
     mixer.prepare ({ sampleRate, (juce::uint32) samplesPerBlock, (juce::uint32) numCh });
@@ -256,7 +276,7 @@ void GristleProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     initSm (vbatSm,    batteryRaw->load(), 0.15);
     initSm (vpSm,      vpRaw->load(), 0.10);
     initSm (gtrSm,     gtrRaw->load() / 10.0f, 0.03);
-    for (size_t k = 0; k < 4; ++k) initSm (trimSm[k], trimRaw[k]->load(), 0.05);
+    for (size_t k = 0; k < trimSm.size(); ++k) initSm (trimSm[k], trimRaw[k]->load(), 0.05);
 
     sampleClock = 0; lastWrap = -1; phaseArmed = false; gWindow = 0; scopeDiv = 0;
     gMin = gMax = (float) circuit.gate();
@@ -288,7 +308,7 @@ void GristleProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
     vbatSm.setTargetValue (batteryRaw->load());
     vpSm.setTargetValue (vpRaw->load());
     gtrSm.setTargetValue (gtrRaw->load() / 10.0f);
-    for (size_t k = 0; k < 4; ++k) trimSm[k].setTargetValue (trimRaw[k]->load());
+    for (size_t k = 0; k < trimSm.size(); ++k) trimSm[k].setTargetValue (trimRaw[k]->load());
 
     const bool bypassed = bypassRaw->load() > 0.5f;
     mixer.setWetMixProportion (bypassed ? 0.0f : 1.0f);
@@ -305,8 +325,8 @@ void GristleProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
         circuit.setSupply (vbatSm.getCurrentValue());
         circuit.setJfetVto (vpSm.getCurrentValue());
         circuit.setGuitarVolume (gtrSm.getCurrentValue());
-        circuit.setTrimmers (trimSm[0].getCurrentValue(), trimSm[1].getCurrentValue(),
-                             trimSm[2].getCurrentValue(), trimSm[3].getCurrentValue());
+        applyTrims (trimSm[0].getCurrentValue(), trimSm[1].getCurrentValue(), trimSm[2].getCurrentValue(),
+                    trimSm[3].getCurrentValue(), trimSm[4].getCurrentValue());
         circuit.reset();
         oversampling->reset();
         circuitIdle = false;
@@ -357,7 +377,9 @@ void GristleProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
             circuit.setSupply (vbatSm.skip (len));
             circuit.setJfetVto (vpSm.skip (len));
             circuit.setGuitarVolume (gtrSm.skip (len));
-            circuit.setTrimmers (trimSm[0].skip (len), trimSm[1].skip (len), trimSm[2].skip (len), trimSm[3].skip (len));
+            const float t0 = trimSm[0].skip (len), t1 = trimSm[1].skip (len), t2 = trimSm[2].skip (len),
+                        t3 = trimSm[3].skip (len), t4 = trimSm[4].skip (len);
+            applyTrims (t0, t1, t2, t3, t4);
 
             for (int j = 0; j < len; ++j)
             {
@@ -394,6 +416,7 @@ void GristleProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
                         if (lfoHz.load() > bound) lfoHz.store (bound);
                     }
 
+                    ledLevel.store ((float) circuit.ledDrive(), std::memory_order_relaxed);
                     const float g = (float) circuit.gate();
                     gMin = std::min (gMin, g); gMax = std::max (gMax, g);
                     if (++gWindow >= (int) (hostRate / 8.0 * 1.5))   // finestra di 1,5 s
