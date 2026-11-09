@@ -1,6 +1,7 @@
 #include "PluginEditor.h"
 #include "BinaryData.h"
 #if defined (JucePlugin_Build_Standalone) && JucePlugin_Build_Standalone
+ #include <juce_audio_utils/juce_audio_utils.h>
  #include <juce_audio_plugin_client/Standalone/juce_StandaloneFilterWindow.h>
 #endif
 #include <cstdint>
