@@ -361,7 +361,7 @@ InteriorPanel::InteriorPanel (GristleProcessor& p, juce::Typeface::Ptr panelFace
         s.setPopupDisplayEnabled (true, true, this);
         const int idx = proc.getLearnIndex (id);
         s.onLearnMenu = [learnMenu, idx, &s] { learnMenu (idx, &s); };
-        s.setTooltip (String::fromUTF8 (tip) + ". Clic destro: MIDI Learn. Doppio clic: taratura originale. Maiusc + trascina: regolazione fine");
+        s.setTooltip (String::fromUTF8 (tip) + ". Doppio clic: taratura originale. Maiusc + trascina: regolazione fine");
         s.setDoubleClickReturnValue (true, def);
         s.setVelocityModeParameters (1.0, 1, 0.0, false, ModifierKeys::shiftModifier);
         addAndMakeVisible (s);
@@ -375,7 +375,7 @@ InteriorPanel::InteriorPanel (GristleProcessor& p, juce::Typeface::Ptr panelFace
     batA = std::make_unique<AudioProcessorValueTreeState::SliderAttachment> (proc.apvts, ParamIDs::battery, battery);
     vpA  = std::make_unique<AudioProcessorValueTreeState::SliderAttachment> (proc.apvts, ParamIDs::jfetVp, vp);
 
-    resetBtn.setTooltip ("Trimmer come nella taratura dell'articolo, BIAS, GAIN e LEVEL di fabbrica, batterie a 9 V, 2N3819 tipico (Vp \xe2\x88\x92" "3 V)");
+    resetBtn.setTooltip (String::fromUTF8 ("Trimmer come nella taratura dell'articolo, BIAS, GAIN e LEVEL di fabbrica, batterie a 9 V, 2N3819 tipico (Vp \xe2\x88\x92" "3 V)"));
     resetBtn.onClick = [this] { resetToOriginal(); };
     closeBtn.onClick = [this] { if (onClose) onClose(); };
     addAndMakeVisible (resetBtn);
@@ -748,7 +748,7 @@ GristleEditor::GristleEditor (GristleProcessor& p)
         s.setDoubleClickReturnValue (true, prm->convertFrom0to1 (prm->getDefaultValue()));
         s.setMouseDragSensitivity (small ? 160 : 240);
         if (! small) s.getProperties().set ("style", "pedal");
-        s.setTooltip ("Clic destro: MIDI Learn. Doppio clic: valore predefinito");
+        s.setTooltip ("Doppio clic: valore predefinito");
         const int idx = proc.getLearnIndex (id);
         s.onLearnMenu = [this, idx, &s] { showLearnMenu (idx, &s); };
         addAndMakeVisible (s);
@@ -765,13 +765,13 @@ GristleEditor::GristleEditor (GristleProcessor& p)
     setupKnob (gtrVol,  ParamIDs::gtrVol, true);
     wave.setRotaryParameters (waveStart, waveEnd, true);
     wave.setMouseDragSensitivity (120);
-    speed.setTooltip (juce::String::fromUTF8 ("SPEED (VR1, 10k log): velocit\xc3\xa0 dell'oscillatore, da circa 0,1 a 90 Hz. Clic destro: MIDI Learn"));
-    depth.setTooltip ("DEPTH (VR4, 10k lin): quanta forma d'onda arriva al gate del JFET. Clic destro: MIDI Learn");
-    wave.setTooltip ("Forma d'onda (S1): rampa che sale, rampa che scende, triangolo, quadra. Clic destro: MIDI Learn");
-    bias.setTooltip ("BIAS (VR5 sul pannello): polarizzazione del gate del JFET, cio\xc3\xa8 il centro della spazzata del filtro e il volume medio del VCA. Clic destro: MIDI Learn");
-    gain.setTooltip ("GAIN (pot al posto di R21): guadagno di IC4, da x1 a x11 (a fondo corsa come l'originale). Pi\xc3\xb9 guadagno, pi\xc3\xb9 saturazione. Clic destro: MIDI Learn");
-    level.setTooltip ("LEVEL (VR6 sul pannello, log): volume d'uscita dell'effetto. Clic destro: MIDI Learn");
-    gtrVol.setTooltip ("Volume della chitarra (pot logaritmico). Clic destro: MIDI Learn");
+    speed.setTooltip (juce::String::fromUTF8 ("SPEED: velocit\xc3\xa0 dell'oscillatore, da circa 0,1 a 90 Hz"));
+    depth.setTooltip ("DEPTH: quanta forma d'onda arriva al gate del JFET");
+    wave.setTooltip ("Forma d'onda: rampa che sale, rampa che scende, triangolo, quadra");
+    bias.setTooltip (juce::String::fromUTF8 ("BIAS: polarizzazione del gate del JFET, cio\xc3\xa8 il centro della spazzata del filtro e il volume medio del VCA"));
+    gain.setTooltip (juce::String::fromUTF8 ("GAIN: guadagno dello stadio d'ingresso, da x1 a x11 (a fondo corsa come l'originale). Pi\xc3\xb9 guadagno, pi\xc3\xb9 saturazione"));
+    level.setTooltip ("LEVEL: volume d'uscita dell'effetto");
+    gtrVol.setTooltip ("Volume della chitarra (pot logaritmico)");
 
     speedA = std::make_unique<SA> (proc.apvts, ParamIDs::speed,  speed);
     depthA = std::make_unique<SA> (proc.apvts, ParamIDs::depth,  depth);
@@ -785,14 +785,14 @@ GristleEditor::GristleEditor (GristleProcessor& p)
 
     modeSw.onLearnMenu   = [this] { showLearnMenu (GristleProcessor::idxMode, &modeSw); };
     bypassSw.onLearnMenu = [this] { showLearnMenu (GristleProcessor::idxBypass, &bypassSw); };
-    modeSw.setTooltip ("VCA / VCF (S2): amplificatore controllato (tremolo) o filtro passa-banda che si sposta. Clic destro: MIDI Learn");
-    bypassSw.setTooltip ("Bypass (S3): effetto inserito (LED acceso) o segnale diretto. Clic destro: MIDI Learn");
+    modeSw.setTooltip ("VCA / VCF: amplificatore controllato (tremolo) o filtro passa-banda che si sposta");
+    bypassSw.setTooltip ("Bypass: effetto inserito (LED acceso) o segnale diretto");
     addAndMakeVisible (modeSw);
     addAndMakeVisible (bypassSw);
     modeA   = std::make_unique<BA> (proc.apvts, ParamIDs::mode,   modeSw);
     bypassA = std::make_unique<BA> (proc.apvts, ParamIDs::bypass, bypassSw);
 
-    pickupBox.setTooltip ("Pick-up della chitarra collegata (o sorgente di linea): l'ingresso del pedale (47 k\xce\xa9) lo carica");
+    pickupBox.setTooltip (juce::String::fromUTF8 ("Pick-up della chitarra collegata (o sorgente di linea): l'ingresso del pedale (47 k\xce\xa9) lo carica"));
     pickupBox.onChange = [this] { pickupChosen(); };
     addAndMakeVisible (pickupBox);
     pickupMenuBtn.setTooltip ("Salva i valori attuali con il nome della chitarra, o elimina una chitarra salvata");
