@@ -83,7 +83,8 @@ private:
     GristleProcessor& proc;
     juce::Typeface::Ptr face;
     LearnableSlider vr2, vr3, battery, vp;
-    juce::TextButton resetBtn { "TARATURA ORIGINALE" }, closeBtn { "CHIUDI" };
+    juce::TextButton resetBtn { "TARATURA ORIGINALE" }, closeBtn { "CHIUDI" }, noiseBtn { "RUMORE" };
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> noiseA;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> vr2A, vr3A, batA, vpA;
     float k = 1.0f;
     std::vector<float> trace;
@@ -99,6 +100,7 @@ public:
     void paint (juce::Graphics&) override;
     void paintOverChildren (juce::Graphics&) override;
     void resized() override;
+    void mouseDown (const juce::MouseEvent&) override;
 
     // icona dell'applicazione Standalone (resources/icon.png)
     static juce::Image createAppIcon (int size);
@@ -125,6 +127,7 @@ public:
 private:
     void timerCallback() override;
     void showLearnMenu (int paramIndex, juce::Component* target);
+    void showMidiDeviceMenu();
     void renderBackground();
     juce::Component* controlFor (int paramIndex);
     juce::Rectangle<float> base (float x, float y, float w, float h) const;

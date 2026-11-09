@@ -27,15 +27,21 @@ LED che segue l'LFO, un deviatore VCA/VCF e un solo interruttore a pedale con il
 | bypass | S3 (a pedale), LED acceso = effetto inserito | 64 (pedale sustain) |
 | INPUT / OUTPUT, VOLUME, PICKUP | barra di servizio (non fanno parte del pedale) | — |
 
+**Da dove arrivano i CC**: clic sul display MIDI in alto. *Dalla DAW* usa i CC che la DAW passa al
+plugin; scegliendo una porta (per esempio *KeyLab mkII 61 MIDI*) il plugin la apre da sé e riceve i
+CC direttamente dalla tastiera, in qualsiasi DAW e formato. Serve perché Ableton Live non passa i CC
+agli effetti VST3 e gli AU effetto non ricevono MIDI. Se la KeyLab è collegata, all'apertura viene
+scelta da sola (la porta "MIDI", non quella "DAW"). Con una porta aperta, i CC della DAW vengono
+ignorati, così un pedale non commuta due volte.
+
 **MIDI Learn**: clic destro su un comando, poi *MIDI Learn*, poi muovi un controllo della KeyLab.
 Funziona anche per i trimmer, le batterie e il JFET del pannello interno. La mappatura viene salvata nel progetto.
 Per i due pedali imposta i pulsanti della KeyLab in modalità *Gate/Momentary* in Arturia MIDI
 Control Center.
 
-- **Ableton Live**: plugin sulla traccia audio della chitarra, poi una traccia MIDI con ingresso
-  KeyLab e *MIDI To* verso la traccia della chitarra, "CARTILAGINE". In alternativa la mappatura MIDI di Live (Cmd+M).
-- **Logic Pro**: l'AU è un normale Audio FX e non riceve i CC. Usa l'assegnazione dei controller
-  di Logic (Cmd+K). MIDI Learn interno e CC valgono per VST3 e Standalone.
+- **Ableton Live** e **Logic Pro**: basta la porta della KeyLab scelta nel display MIDI, senza
+  tracce MIDI né instradamenti. Restano possibili anche la mappatura MIDI di Live (Cmd+M) e
+  l'assegnazione dei controller di Logic (Cmd+K) sui parametri del plugin.
 
 Come suonarlo (dall'articolo): gli effetti sono ripetitivi, quindi rendono meglio su accordi tenuti e note
 lunghe. Rampe che salgono e che scendono hanno effetti opposti sui due trattamenti: la rampa che sale
@@ -66,6 +72,8 @@ il monitoraggio diretto della scheda audio.
   e la saturazione dei 741.
 - **2N3819 Vp** (−1 … −6 V): il datasheet ammette da −0,5 a −8 V. Cambiando JFET si sposta tutta la
   spazzata e BIAS va ritoccato, come sul pedale vero. IDSS segue Vp e la resistenza minima del canale resta ~128 Ω.
+- **RUMORE**: il soffio dei 741 e delle resistenze al livello reale (IC4 ≈ 26 nV/√Hz con R19 e la
+  sorgente, IC5 ≈ 23 nV/√Hz). Spento di serie, perché il plugin si possa fermare nel silenzio.
 - **TARATURA ORIGINALE** riporta trimmer, BIAS, GAIN, LEVEL, batterie e JFET ai valori di fabbrica.
 
 ### La taratura di fabbrica (procedura "Setting up" dell'articolo, eseguita sul modello)
@@ -140,12 +148,19 @@ di S1 usati nel modello.
 - **Ingresso**: pick-up (R, L, C), potenziometri della chitarra e cavo davanti ai 47 kΩ del pedale, con
   la correzione della DI registrata a 1 MΩ, come in FTG-1. Le chitarre salvate in FTG-1 o FYN-2
   compaiono in "Le mie chitarre".
+- **Uscita**: il cursore di LEVEL è caricato dall'ampli (1 MΩ) e da un cavo di circa 3 m (330 pF):
+  con LEVEL a metà corsa il polo è intorno ai 20 kHz, come col pedale vero.
 - **Frequenza interna**: circa 384 kHz (8x a 44,1/48 kHz, 4x a 88,2/96, 2x a 176,4/192).
   È il minimo a cui il modello di IC5 resta affidabile: a 192 kHz, con il filtro saturo, la soluzione
   si stacca da quella di riferimento a 768 kHz. LFO e forme d'onda girano a ~96 kHz con il CV interpolato.
   Latenza 6 campioni. CPU: circa 9-12% di un core sul server Linux di sviluppo (lento).
   Su un Mac Apple Silicon il carico è molto più basso.
-  Con S3 su OUT, dopo la dissolvenza il circuito si ferma e non consuma CPU.
+  Con S3 su OUT, dopo la dissolvenza il circuito si ferma e non consuma CPU. Senza segnale per 0,3 s
+  (e con RUMORE spento) si ferma il nucleo: resta solo l'LFO, e alla ripresa i condensatori del CV
+  ripartono da dove erano. Newton si ferma con un passo sotto 20 µV (errore sotto −150 dB rispetto
+  alla soluzione esatta) e parte da un predittore quadratico: in media poco più di un'iterazione per
+  campione. Se il predittore sbaglia strada, per esempio subito dopo una commutazione, Newton riparte
+  dalla soluzione del campione precedente.
 
 **Limiti noti e scelte**:
 - L'articolo avverte che, con VR5 troppo avanti, il filtro "entra in oscillazione". Con un 741 a polo

@@ -2,6 +2,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_dsp/juce_dsp.h>
+#include <juce_audio_devices/juce_audio_devices.h>
 #include <array>
 #include <atomic>
 #include "GristleCircuit.h"
@@ -29,6 +30,7 @@ namespace ParamIDs
     inline constexpr const char* vr3     = "vr3";       // TRIANGLE OFFSET
     inline constexpr const char* battery = "battery";   // tensione delle due PP3
     inline constexpr const char* jfetVp  = "jfetVp";    // Vgs(off) del 2N3819
+    inline constexpr const char* noise   = "noise";     // rumore dei 741 e delle resistenze
 }
 
 namespace PickupChoice { enum { ideal = 0, single, p90, humbucker, line, custom, count }; }
@@ -49,11 +51,11 @@ namespace Battery
 }
 
 //==============================================================================
-class GristleProcessor : public juce::AudioProcessor, private juce::Timer
+class GristleProcessor : public juce::AudioProcessor, private juce::Timer, private juce::MidiInputCallback
 {
 public:
     GristleProcessor();
-    ~GristleProcessor() override { stopTimer(); }
+    ~GristleProcessor() override { stopTimer(); if (midiIn != nullptr) midiIn->stop(); midiIn.reset(); }
 
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override {}
@@ -105,6 +107,14 @@ public:
 
     std::atomic<int> lastCC { -1 }, lastCCValue { 0 }, ccCounter { 0 };
 
+    // Ingresso MIDI diretto: il plugin apre da sé la porta della tastiera, così MIDI Learn e
+    // CC funzionano anche dove la DAW non passa i CC agli effetti (Ableton con i VST3, Logic
+    // con gli AU). Identificatore vuoto = CC dalla DAW.
+    void setMidiDevice (const juce::String& identifier);           // thread dei messaggi
+    juce::String getMidiDeviceName() const;
+    juce::String getMidiDeviceIdentifier() const { return midiDeviceId; }
+    bool isUsingMidiDevice() const { return deviceActive.load(); }
+
     static grz::Pickup pickupFor (int choice, float rKohm, float lHenry);
 
     //==========================================================================
@@ -121,6 +131,8 @@ private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createLayout();
     void handleCC (int cc, int value);
     void timerCallback() override;
+    void handleIncomingMidiMessage (juce::MidiInput*, const juce::MidiMessage&) override;
+    void autoSelectKeyLab();
 
     grz::GristleCircuit circuit;
     std::unique_ptr<juce::dsp::Oversampling<float>> oversampling;
@@ -143,6 +155,7 @@ private:
     std::atomic<float>* gtrRaw     = nullptr;
     std::atomic<float>* batteryRaw = nullptr;
     std::atomic<float>* vpRaw      = nullptr;
+    std::atomic<float>* noiseRaw   = nullptr;
     std::array<std::atomic<float>*, 5> trimRaw {};
     grz::Pickup currentPickup() const;
     void applyTrims (float vr2, float vr3, float bias, float level, float gain);
@@ -150,7 +163,10 @@ private:
 
     std::array<juce::RangedAudioParameter*, numLearnable> learnParams {};
     std::array<std::atomic<int>, 128> ccToParam;
-    std::array<bool, 128> ccHigh {};
+    std::array<std::atomic<bool>, 128> ccHigh {};
+    std::unique_ptr<juce::MidiInput> midiIn;
+    juce::String midiDeviceId, midiDeviceName;
+    std::atomic<bool> deviceActive { false };
     std::atomic<int> learningParam { -1 }, mapVersion { 0 };
     std::array<std::atomic<float>, numLearnable> pendingValue;
 
@@ -168,5 +184,6 @@ private:
     static constexpr float voltsPerFS = 1.0f;     // 0 dBFS = 1 V di picco all'ingresso
     static constexpr float fsPerVolt  = 1.0f;     // livello d'uscita reale del pedale
 
+    JUCE_DECLARE_WEAK_REFERENCEABLE (GristleProcessor)
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (GristleProcessor)
 };

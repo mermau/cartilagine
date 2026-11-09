@@ -119,5 +119,28 @@ int main()
         check (nc == 0, "Newton converge sempre");
         check (worst < 9.0, "uscita limitata dalla saturazione dei 741");
     }
+    std::printf ("Pausa nel silenzio e rumore del circuito:\n");
+    {
+        GristleCircuit c; c.prepare (fs); c.reset();
+        int idleN = 0; double jump = 0, prev = 0;
+        for (int i = 0; i < (int) (fs * 3); ++i)
+        {
+            const double t = i / fs;
+            const bool on = t < 1.0 || t >= 2.5;
+            const double tt = t < 1.0 ? t : t - 2.5;
+            const double y = c.process (on ? 0.3 * std::sin (2 * kPi * 196 * t) * std::exp (-tt * 2) : 0.0);
+            idleN += c.isIdle();
+            if (t > 2.45 && t < 2.6) jump = std::max (jump, std::abs (y - prev));
+            prev = y;
+        }
+        std::printf ("  in pausa %.2f s su 1,5 s di silenzio, salto massimo alla ripresa %.4f V\n", idleN / fs, jump);
+        check (idleN > (int) (fs * 1.0) && jump < 0.05, "nel silenzio il nucleo si ferma e riparte senza salti");
+        GristleCircuit n; n.prepare (fs); n.setNoise (true); n.setFilter (false); n.setDepth (0); n.reset();
+        double s2 = 0; const int N = (int) fs;
+        for (int i = 0; i < N; ++i) { const double y = n.process (0.0); if (i > N / 2) s2 += y * y; }
+        const double dbv = 10 * std::log10 (s2 / (N / 2));
+        std::printf ("  rumore in uscita senza segnale (ENVELOPE, VR6 dell'articolo): %.1f dBV\n", dbv);
+        check (dbv > -125 && dbv < -85 && ! n.isIdle(), "rumore del circuito a un livello plausibile, niente pausa");
+    }
     return bad ? 1 : 0;
 }

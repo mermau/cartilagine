@@ -378,7 +378,13 @@ InteriorPanel::InteriorPanel (GristleProcessor& p, juce::Typeface::Ptr panelFace
     resetBtn.setTooltip (String::fromUTF8 ("Trimmer come nella taratura dell'articolo, BIAS, GAIN e LEVEL di fabbrica, batterie a 9 V, 2N3819 tipico (Vp \xe2\x88\x92" "3 V)"));
     resetBtn.onClick = [this] { resetToOriginal(); };
     closeBtn.onClick = [this] { if (onClose) onClose(); };
+    noiseBtn.setClickingTogglesState (true);
+    noiseBtn.setColour (TextButton::buttonOnColourId, accent);
+    noiseBtn.setTooltip (String::fromUTF8 ("Rumore del circuito: il soffio dei 741 e delle resistenze, al livello reale. "
+                                           "Spento, il plugin si ferma nel silenzio e consuma meno"));
+    noiseA = std::make_unique<AudioProcessorValueTreeState::ButtonAttachment> (proc.apvts, ParamIDs::noise, noiseBtn);
     addAndMakeVisible (resetBtn);
+    addAndMakeVisible (noiseBtn);
     addAndMakeVisible (closeBtn);
     startTimerHz (30);
 }
@@ -401,7 +407,8 @@ void InteriorPanel::resized()
     vr3.setBounds (area (220, y - 40, 80, 80));
     battery.setBounds (area (40, 448, 92, 92));
     vp.setBounds (area (250, 452, 84, 84));
-    resetBtn.setBounds (area (24, 600, 180, 34));
+    resetBtn.setBounds (area (24, 600, 150, 34));
+    noiseBtn.setBounds (area (182, 600, 86, 34));
     closeBtn.setBounds (area (276, 600, 80, 34));
 }
 
@@ -939,7 +946,7 @@ void GristleEditor::paint (juce::Graphics& g)
 
     g.setColour (Colour (0xff9be08a));
     g.setFont (uiFont (10.0f));
-    String line1 = "MIDI", line2;
+    String line1 = proc.isUsingMidiDevice() ? "MIDI: " + proc.getMidiDeviceName() : String ("MIDI: dalla DAW"), line2;
     const int learn = proc.getLearningParam();
     if (learn >= 0)
     {
@@ -955,7 +962,8 @@ void GristleEditor::paint (juce::Graphics& g)
                 + (idx >= 0 ? String ("  -> ") + displayNames[idx] : String ("  (non assegnato)"));
     }
     else
-        line2 = "clic destro su un comando: Learn";
+        line2 = proc.isUsingMidiDevice() ? String ("clic destro su un comando: Learn")
+                                         : String ("clic qui per scegliere la tastiera");
     g.drawText (line1, disp.reduced (10.0f, 5.0f).removeFromTop (16.0f), Justification::centredLeft);
     g.setFont (uiFont (10.0f, false));
     g.setColour (Colour (0xff8fcf80));
@@ -971,6 +979,35 @@ void GristleEditor::paintOverChildren (juce::Graphics& g)
         g.setColour (learnCol.withAlpha (a));
         g.drawRoundedRectangle (getLocalArea (c, c->getLocalBounds()).toFloat().expanded (3.0f * scale), 8.0f * scale, 2.0f * scale);
     }
+}
+
+// il display MIDI: un clic apre la scelta della porta
+void GristleEditor::mouseDown (const juce::MouseEvent& e)
+{
+    if (base (76.0f, 8.0f, 216.0f, 44.0f).contains (e.position)) showMidiDeviceMenu();
+}
+
+void GristleEditor::showMidiDeviceMenu()
+{
+    juce::PopupMenu m;
+    m.addSectionHeader ("Ingresso MIDI dei CC");
+    const auto current = proc.getMidiDeviceIdentifier();
+    m.addItem (1, "Dalla DAW (traccia MIDI instradata sul plugin)", true, current.isEmpty());
+    const auto devices = juce::MidiInput::getAvailableDevices();
+    if (! devices.isEmpty()) m.addSeparator();
+    for (int i = 0; i < devices.size(); ++i)
+        m.addItem (100 + i, devices[i].name, true, devices[i].identifier == current);
+    if (devices.isEmpty()) m.addItem (2, "(nessuna porta MIDI collegata)", false);
+
+    juce::Component::SafePointer<GristleEditor> safe (this);
+    m.showMenuAsync (juce::PopupMenu::Options().withTargetScreenArea (localAreaToGlobal (base (76.0f, 8.0f, 216.0f, 44.0f).toNearestInt())),
+                     [safe, devices] (int r)
+                     {
+                         if (safe == nullptr || r == 0) return;
+                         if (r == 1) safe->proc.setMidiDevice ({});
+                         else if (r >= 100 && r - 100 < devices.size()) safe->proc.setMidiDevice (devices[r - 100].identifier);
+                         safe->repaint();
+                     });
 }
 
 juce::Component* GristleEditor::controlFor (int idx)

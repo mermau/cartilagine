@@ -52,6 +52,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 
 namespace grz
 {
@@ -195,6 +196,15 @@ namespace detail
         void reset() { s = 0.0; }
         void setCutoff (double fc, double sr) { const double w = std::tan (kPi * fc / sr); g = w / (1.0 + w); }
         inline double hp (double xx) { const double u = (xx - s) * g; const double y = u + s; s = y + u; return xx - y; }
+        inline double lp (double xx) { const double u = (xx - s) * g; const double y = u + s; s = y + u; return y; }
+    };
+
+    // rumore gaussiano veloce (xorshift + somma di 4 uniformi, varianza unitaria)
+    struct Gauss
+    {
+        uint64_t st = 0x9E3779B97F4A7C15ull;
+        inline double uni() { st ^= st << 13; st ^= st >> 7; st ^= st << 17; return (double) (st >> 11) * (1.0 / 9007199254740992.0); }
+        inline double next() { return (uni() + uni() + uni() + uni() - 2.0) * 1.7320508075688772; }
     };
 
     // Biquad da prototipo analogico (bilineare), doppia precisione
@@ -337,6 +347,18 @@ public:
         fs = sampleRate; T = 1.0 / fs;
         input.prepare (fs);
         dcBlock.setCutoff (4.0, fs);
+        // rumore bianco: densità spettrale -> deviazione standard per campione (σ = e·√(fs/2))
+        //   IC4: 741 (≈ 23 nV/√Hz) + termico di R19 ‖ sorgente (~8 kΩ, 12 nV/√Hz) + corrente
+        //        di rumore (0,5 pA/√Hz) sulla stessa resistenza  ->  ~26 nV/√Hz
+        //   IC5: 741 sull'ingresso +, ~23 nV/√Hz
+        {
+            const double kT4 = 4.0 * 1.380649e-23 * 300.0, rs = 8.2e3;
+            const double e4 = std::sqrt (23e-9 * 23e-9 + kT4 * rs + (0.5e-12 * rs) * (0.5e-12 * rs));
+            noise4 = e4 * std::sqrt (0.5 * fs);
+            noise5 = 23e-9 * std::sqrt (0.5 * fs);
+        }
+        idleAfter = (int) (0.3 * fs);
+        lastRth = -1e9;
         ic4Coef = 1.0 - std::exp (-2.0 * kPi * OpAmp741::GBW / ic4Gain * T);
         // LFO, forme d'onda e TR1 girano a circa 96 kHz (i fronti più ripidi, il ritorno della
         // rampa e lo slew dei 741, durano comunque decine di µs) e il CV viene interpolato
@@ -382,7 +404,7 @@ public:
         d1Guess = 0.0;
         tb = -0.5; te = 0.1; tc = 0.0;               // TR1 (verrà risolto)
         ic4 = 0.0; ic4lin = 0.0;
-        x = {}; xPrev = {}; xPrev2 = {};
+        x = {}; xPrev = {}; xPrev2 = {}; xPrev3 = {};
         caps.fill ({}); gPrev = 0.0;
         lastFilt = filterMode; held8 = held9 = 0.0;
 
@@ -399,16 +421,16 @@ public:
         for (int k = 0; k < NCap; ++k) { const double g = 2.0 * capC (k) / T; caps[(size_t) k].h = g * capV (k); }
         gPrev = opG (x[iM]);
         held8 = capV (cC8); held9 = capV (cC9);
-        xPrev = x; xPrev2 = x;
+        xPrev = x; xPrev2 = x; xPrev3 = x;
         dcBlock.reset();
-        lastOut = 0.0;
+        outCable.reset();
+        lastOut = 0.0; silentCount = 0; idle = false; n5 = 0.0;
     }
 
     /** Un campione alla frequenza interna. vin = segnale della chitarra (V). */
     inline double process (double vin)
     {
-        const double vi = input.process (vin);
-        ic4Step (vi);
+        // l'LFO gira sempre, come sul pedale
         if (++lfoCount >= lfoDiv)
         {
             lfoCount = 0;
@@ -418,13 +440,43 @@ public:
             vxTo = vx;
         }
         vx = vxFrom + (vxTo - vxFrom) * (double) (lfoCount + 1) / (double) lfoDiv;
+
+        // pausa nel silenzio: senza segnale (e senza rumore simulato) il nucleo resta fermo.
+        // Alla ripresa i condensatori del CV ripartono da dove erano e si riallineano in pochi
+        // ms con le loro costanti di tempo, senza salti.
+        if (! noiseOn)
+        {
+            if (std::abs (vin) < 1e-6) { if (silentCount < idleAfter) ++silentCount; }
+            else silentCount = 0;
+            const bool quiet = std::abs (sat (x[iU])) < 1e-5 && std::abs (x[iD]) < 1e-5;
+            if (silentCount >= idleAfter && quiet)
+            {
+                idle = true;
+                lastOut = dcBlock.hp (outCable.lp (0.0));
+                return lastOut;
+            }
+        }
+        if (idle) { idle = false; xPrev2 = xPrev; xPrev3 = xPrev; }
+
+        double vi = input.process (vin);
+        if (noiseOn) vi += noise4 * gauss.next();          // rumore all'ingresso di IC4
+        n5 = noiseOn ? noise5 * gauss.next() : 0.0;        // rumore all'ingresso + di IC5
+        ic4Step (vi);
         coreStep (ic4, 30);
-        // VR6 (LEVEL): cursore verso l'uscita, caricato dall'ingresso dell'ampli
+
+        // VR6 (LEVEL): cursore verso l'uscita, caricato dall'ingresso dell'ampli (1 MΩ) e dal
+        // cavo (polo dato dalla resistenza del cursore e dalla capacità del cavo)
         const double rth = Components::VR6 * t6 * (1.0 - t6);
         const double out = sat (x[iU]) * t6 * Components::Ramp / (Components::Ramp + rth);
-        lastOut = dcBlock.hp (out);
+        const double rpar = rth * Components::Ramp / (rth + Components::Ramp);
+        if (std::abs (rpar - lastRth) > 1.0) { lastRth = rpar; outCable.setCutoff (std::min (0.45 * fs, 1.0 / (2.0 * kPi * std::max (rpar, 10.0) * kCableOut)), fs); }
+        lastOut = dcBlock.hp (outCable.lp (out));
         return lastOut;
     }
+
+    /** Rumore del circuito (741 e resistenze). Spento di default. */
+    void setNoise (bool on) { noiseOn = on; }
+    bool isIdle() const { return idle; }
 
     //--- diagnostica ---------------------------------------------------------------
     double ramp() const      { return vr; }            // uscita di IC1
@@ -468,9 +520,10 @@ public:
     }
 
 private:
-    // convergenza di Newton: passo sotto 1 µV. Vicino alla soluzione la convergenza è
-    // quadratica, quindi l'errore che resta è dell'ordine di 1e-12 V.
-    static constexpr double kTol = 1e-6;
+    // convergenza di Newton: passo sotto 20 µV. Vicino alla soluzione la convergenza è
+    // quadratica: l'errore che resta è sotto 1e-8 V (differenza dalla soluzione esatta
+    // sotto −150 dB su una DI vera), con il 20-30% di iterazioni in meno
+    static constexpr double kTol = 2e-5;
 
     //==========================================================================
     // IC4: guadagno 11, banda GBW/11, slew rate, saturazione
@@ -681,7 +734,7 @@ private:
         const double d1 = 1.0 / (grx + g16 + g5);
         const double a1 = g16 * d1, n1Const = (vx * grx + h5) * d1;
 
-        // predittore lineare (non dopo una commutazione di S2: la topologia è cambiata)
+        // predittore (non dopo una commutazione di S2: la topologia è cambiata)
         const bool switched = filt != lastFilt;
         lastFilt = filt;
         if (switched)
@@ -697,10 +750,10 @@ private:
         const double h8 = caps[cC8].h, h9 = caps[cC9].h;
         double v[NK];
         if (be || switched) { v[kD] = x[iD]; v[kM] = x[iM]; v[kG] = x[iG]; v[kN] = x[iN2]; }
-        else
+        else   // predittore quadratico sugli ultimi tre campioni
         {
-            v[kD] = 2.0 * xPrev[iD] - xPrev2[iD];  v[kM] = 2.0 * xPrev[iM] - xPrev2[iM];
-            v[kG] = 2.0 * xPrev[iG] - xPrev2[iG];  v[kN] = 2.0 * xPrev[iN2] - xPrev2[iN2];
+            const int id[NK] = { iD, iM, iG, iN2 };
+            for (int i = 0; i < NK; ++i) v[i] = 3.0 * xPrev[(size_t) id[i]] - 3.0 * xPrev2[(size_t) id[i]] + xPrev3[(size_t) id[i]];
         }
 
         // residui (F) e, se richiesto, jacobiano (J) nel punto v
@@ -710,7 +763,7 @@ private:
             const double D = p[kD], M = p[kM], G = p[kG], N2 = p[kN];
             // IC5
             double dgm, sd;
-            const double gm = opG (M, &dgm);
+            const double gm = opG (M - n5, &dgm);
             const double O = sat (uBase + T * th * gm, &sd);
             const double dOdM = sd * T * th * dgm;
             // --- drain ---
@@ -770,41 +823,56 @@ private:
         };
         auto norm2 = [] (const double (&F)[NK]) { double s2 = 0; for (int i = 0; i < NK; ++i) s2 += F[i] * F[i]; return s2; };
 
-        lastConv = false;
-        int it = 0;
-        double F[NK], J[NK][NK];
-        eval (v, F, J, true);
-        double r2 = norm2 (F);
-        for (; it < maxIter; ++it)
+        // Newton con ricerca lineare a partire da v
+        auto newton = [&] (int maxIt, int& it) -> bool
         {
-            double dx[NK];
-            if (! solve4 (J, F, dx)) break;
-            const double m = std::max ({ std::abs (dx[0]), std::abs (dx[1]), std::abs (dx[2]), std::abs (dx[3]) });
-            double s = m > 0.5 ? 0.5 / m : 1.0;            // limitazione del passo (giunzioni)
-            if (m * s < kTol)
+            double F[NK], J[NK][NK];
+            eval (v, F, J, true);
+            double r2 = norm2 (F);
+            for (it = 0; it < maxIt; ++it)
             {
-                for (int i = 0; i < NK; ++i) v[i] -= s * dx[i];
-                lastConv = true; ++it; break;
+                double dx[NK];
+                if (! solve4 (J, F, dx)) return false;
+                const double m = std::max ({ std::abs (dx[0]), std::abs (dx[1]), std::abs (dx[2]), std::abs (dx[3]) });
+                double s = m > 0.5 ? 0.5 / m : 1.0;            // limitazione del passo (giunzioni)
+                if (m * s < kTol)
+                {
+                    for (int i = 0; i < NK; ++i) v[i] -= s * dx[i];
+                    ++it; return true;
+                }
+                // ricerca lineare: il passo non deve far crescere il residuo (con lo stadio d'ingresso
+                // di IC5 saturo Newton puro può rimbalzare tra due stati)
+                double vt[NK];
+                for (int tries = 0; ; ++tries)
+                {
+                    for (int i = 0; i < NK; ++i) vt[i] = v[i] - s * dx[i];
+                    eval (vt, F, J, true);
+                    const double nr2 = norm2 (F);
+                    if (nr2 <= r2 * (1.0 - 1e-4 * s) || tries >= 8) { r2 = nr2; break; }
+                    s *= 0.5;
+                }
+                for (int i = 0; i < NK; ++i) v[i] = vt[i];
             }
-            // ricerca lineare: il passo non deve far crescere il residuo (con lo stadio d'ingresso
-            // di IC5 saturo Newton puro può rimbalzare tra due stati)
-            double vt[NK];
-            for (int tries = 0; ; ++tries)
-            {
-                for (int i = 0; i < NK; ++i) vt[i] = v[i] - s * dx[i];
-                eval (vt, F, J, true);
-                const double nr2 = norm2 (F);
-                if (nr2 <= r2 * (1.0 - 1e-4 * s) || tries >= 8) { r2 = nr2; break; }
-                s *= 0.5;
-            }
-            for (int i = 0; i < NK; ++i) v[i] = vt[i];
+            return false;
+        };
+        int it = 0;
+        lastConv = newton (maxIter, it);
+        if (! lastConv && ! be)
+        {
+            // il predittore ha sbagliato strada (per esempio subito dopo una commutazione):
+            // si riparte dalla soluzione del campione precedente, con più iterazioni
+            v[kD] = xPrev[iD]; v[kM] = xPrev[iM]; v[kG] = xPrev[iG]; v[kN] = xPrev[iN2];
+            int it2 = 0;
+            lastConv = newton (200, it2);
+            it += it2;
+            if (! lastConv) { v[kD] = xPrev[iD]; v[kM] = xPrev[iM]; v[kG] = xPrev[iG]; v[kN] = xPrev[iN2]; }
         }
         lastIters = it;
 
         // stato finale
         double U;
         {
-            const double gm = opG (v[kM]);
+            const double gm = opG (v[kM] - n5);
             U = std::clamp (uBase + T * th * gm, -1.5 * vsat(), 1.5 * vsat());   // niente "windup"
             gPrev = gm;
         }
@@ -819,7 +887,8 @@ private:
             const double i = gg * vv - caps[(size_t) k].h;
             caps[(size_t) k].h = be ? gg * vv : gg * vv + i;
         }
-        xPrev2 = xPrev; xPrev = x;
+        xPrev3 = xPrev2; xPrev2 = xPrev; xPrev = x;
+        if (switched) { xPrev2 = x; xPrev3 = x; }
     }
 
     // eliminazione di Gauss con pivot parziale (4x4), risolve J dx = F
@@ -865,7 +934,7 @@ private:
     // IC4
     double ic4 = 0.0, ic4lin = 0.0, ic4Coef = 0.0, ic3Coef = 0.0;
     // nucleo
-    std::array<double, NX> x {}, xPrev {}, xPrev2 {};
+    std::array<double, NX> x {}, xPrev {}, xPrev2 {}, xPrev3 {};
     std::array<CapState, NCap> caps {};
     double gPrev = 0.0;
     int lastIters = 0; bool lastConv = false, lastFilt = true;
@@ -873,7 +942,12 @@ private:
     double lastOut = 0.0;
 
     InputNetwork input;
-    detail::OnePole dcBlock;
+    detail::OnePole dcBlock, outCable;
+    detail::Gauss gauss;
+    static constexpr double kCableOut = 330e-12;      // cavo di circa 3 m verso l'amplificatore
+    bool noiseOn = false, idle = false;
+    double noise4 = 0.0, noise5 = 0.0, n5 = 0.0, lastRth = -1e9;
+    int silentCount = 0, idleAfter = 100000;
 };
 
 } // namespace grz

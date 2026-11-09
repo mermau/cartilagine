@@ -69,6 +69,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout GristleProcessor::createLayo
     layout.add (std::make_unique<AudioParameterFloat> (ParameterID { ParamIDs::jfetVp, 1 }, "JFET Vp",
         NormalisableRange<float> (-6.0f, -1.0f, 0.01f), -3.0f,
         AudioParameterFloatAttributes().withLabel ("V").withStringFromValueFunction ([] (float v, int) { return String (v, 2); })));
+    layout.add (std::make_unique<AudioParameterBool> (ParameterID { ParamIDs::noise, 1 }, "Circuit Noise", false));
     return layout;
 }
 
@@ -91,6 +92,7 @@ GristleProcessor::GristleProcessor()
     gtrRaw     = apvts.getRawParameterValue (ParamIDs::gtrVol);
     batteryRaw = apvts.getRawParameterValue (ParamIDs::battery);
     vpRaw      = apvts.getRawParameterValue (ParamIDs::jfetVp);
+    noiseRaw   = apvts.getRawParameterValue (ParamIDs::noise);
     trimRaw    = { apvts.getRawParameterValue (ParamIDs::vr2), apvts.getRawParameterValue (ParamIDs::vr3),
                    apvts.getRawParameterValue (ParamIDs::bias), apvts.getRawParameterValue (ParamIDs::level),
                    apvts.getRawParameterValue (ParamIDs::gain) };
@@ -105,6 +107,55 @@ GristleProcessor::GristleProcessor()
 
     resetDefaultMappings();
     startTimerHz (60);
+    autoSelectKeyLab();
+}
+
+//==============================================================================
+// Ingresso MIDI diretto
+void GristleProcessor::autoSelectKeyLab()
+{
+    // di fabbrica: la porta "MIDI" della KeyLab (non quella "DAW"), se è collegata
+    const auto devices = juce::MidiInput::getAvailableDevices();
+    juce::String best;
+    for (const auto& d : devices)
+        if (d.name.containsIgnoreCase ("keylab"))
+        {
+            if (best.isEmpty() || (d.name.containsIgnoreCase ("midi") && ! d.name.containsIgnoreCase ("daw")))
+                best = d.identifier;
+        }
+    if (best.isNotEmpty()) setMidiDevice (best);
+}
+
+void GristleProcessor::setMidiDevice (const juce::String& identifier)
+{
+    if (midiIn != nullptr) { midiIn->stop(); midiIn.reset(); }
+    deviceActive.store (false);
+    midiDeviceId = identifier;
+    midiDeviceName = {};
+    if (identifier.isNotEmpty())
+    {
+        for (const auto& d : juce::MidiInput::getAvailableDevices())
+            if (d.identifier == identifier) midiDeviceName = d.name;
+        midiIn = juce::MidiInput::openDevice (identifier, this);
+        if (midiIn != nullptr)
+        {
+            midiIn->start();
+            deviceActive.store (true);
+        }
+    }
+    ++mapVersion;
+}
+
+juce::String GristleProcessor::getMidiDeviceName() const
+{
+    if (midiDeviceId.isEmpty()) return {};
+    return midiDeviceName.isNotEmpty() ? midiDeviceName : midiDeviceId;
+}
+
+// thread MIDI del sistema: solo atomici, come per i CC dalla DAW
+void GristleProcessor::handleIncomingMidiMessage (juce::MidiInput*, const juce::MidiMessage& m)
+{
+    if (m.isController()) handleCC (m.getControllerNumber(), m.getControllerValue());
 }
 
 //==============================================================================
@@ -156,7 +207,7 @@ void GristleProcessor::handleCC (int cc, int value)
         for (auto& m : ccToParam)
             if (m.load() == learn) m.store (-1);
         ccToParam[(size_t) cc].store (learn);
-        ccHigh[(size_t) cc] = value >= 64;
+        ccHigh[(size_t) cc].store (value >= 64);
         ++mapVersion;
         return; // il messaggio usato per l'apprendimento non modifica il parametro
     }
@@ -168,12 +219,12 @@ void GristleProcessor::handleCC (int cc, int value)
     if (idx == idxBypass || idx == idxMode)   // interruttori a pedale: commutano alla pressione
     {
         const bool high = value >= 64;
-        if (high && ! ccHigh[(size_t) cc])
+        if (high && ! ccHigh[(size_t) cc].exchange (true))
         {
             const float cur = pending.load() >= 0.0f ? pending.load() : learnParams[(size_t) idx]->getValue();
             pending.store (cur > 0.5f ? 0.0f : 1.0f);
         }
-        ccHigh[(size_t) cc] = high;
+        if (! high) ccHigh[(size_t) cc].store (false);
     }
     else
     {
@@ -251,6 +302,7 @@ void GristleProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     circuit.setFilter (modeRaw->load() < 0.5f);
     circuit.setSupply (batteryRaw->load());
     circuit.setJfetVto (vpRaw->load());
+    circuit.setNoise (noiseRaw->load() > 0.5f);
     circuit.setBiasTop (grz::PanelMod::biasTop);
     applyTrims (trimRaw[0]->load(), trimRaw[1]->load(), trimRaw[2]->load(), trimRaw[3]->load(), trimRaw[4]->load());
     circuit.prepare (sampleRate * (double) oversampling->getOversamplingFactor());
@@ -287,11 +339,14 @@ void GristleProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
 {
     juce::ScopedNoDenormals noDenormals;
 
-    for (const auto meta : midi)
-    {
-        const auto m = meta.getMessage();
-        if (m.isController()) handleCC (m.getControllerNumber(), m.getControllerValue());
-    }
+    // con la porta della tastiera aperta direttamente, i CC della DAW si ignorano
+    // (altrimenti un pedale arriverebbe due volte e commuterebbe due volte)
+    if (! deviceActive.load())
+        for (const auto meta : midi)
+        {
+            const auto m = meta.getMessage();
+            if (m.isController()) handleCC (m.getControllerNumber(), m.getControllerValue());
+        }
     midi.clear();
 
     const int numCh = juce::jmin (getTotalNumInputChannels(), osChannels);
@@ -299,6 +354,7 @@ void GristleProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
     if (numCh < 1) return;
 
     circuit.setPickup (currentPickup());
+    circuit.setNoise (noiseRaw->load() > 0.5f);
     circuit.setWave ((int) waveRaw->load());
     circuit.setFilter (modeRaw->load() < 0.5f);
     speedSm.setTargetValue (speedRaw->load());
@@ -444,6 +500,10 @@ void GristleProcessor::getStateInformation (juce::MemoryBlock& destData)
     juce::XmlElement root ("CartilagineState");
     if (auto params = apvts.copyState().createXml()) root.addChildElement (params.release());
 
+    auto* dev = root.createNewChildElement ("MIDIDEVICE");
+    dev->setAttribute ("id", midiDeviceId);
+    dev->setAttribute ("name", midiDeviceName);
+
     auto* map = root.createNewChildElement ("MIDIMAP");
     for (int cc = 0; cc < 128; ++cc)
         if (const int idx = ccToParam[(size_t) cc].load(); idx >= 0)
@@ -462,6 +522,24 @@ void GristleProcessor::setStateInformation (const void* data, int sizeInBytes)
 
     if (auto* params = xml->getChildByName (apvts.state.getType()))
         apvts.replaceState (juce::ValueTree::fromXml (*params));
+
+    if (auto* dev = xml->getChildByName ("MIDIDEVICE"))
+    {
+        auto id = dev->getStringAttribute ("id");
+        const auto name = dev->getStringAttribute ("name");
+        // l'identificatore può cambiare tra un computer e l'altro: si cerca anche per nome
+        bool found = id.isEmpty();
+        for (const auto& d : juce::MidiInput::getAvailableDevices())
+        {
+            if (d.identifier == id) { found = true; break; }
+            if (name.isNotEmpty() && d.name == name) { id = d.identifier; found = true; break; }
+        }
+        juce::MessageManager::callAsync ([id, found, name, safe = juce::WeakReference<GristleProcessor> (this)]
+        {
+            if (safe == nullptr) return;
+            safe->setMidiDevice (found ? id : juce::String());     // non collegata: CC dalla DAW
+        });
+    }
 
     if (auto* map = xml->getChildByName ("MIDIMAP"))
     {
