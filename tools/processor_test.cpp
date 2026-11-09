@@ -4,7 +4,12 @@
 #include "../Source/PluginProcessor.h"
 #include <chrono>
 
-static void pump (int ms) { juce::MessageManager::getInstance()->runDispatchLoopUntil (ms); }
+// lascia girare il thread dei messaggi (il timer che applica i CC ai parametri) a piccoli passi:
+// sui runner di GitHub, carichi, un'unica attesa breve a volte non basta
+static void pump (int ms)
+{
+    for (int t = 0; t < ms; t += 20) juce::MessageManager::getInstance()->runDispatchLoopUntil (20);
+}
 
 int main()
 {
@@ -45,25 +50,25 @@ int main()
     m.addEvent (juce::MidiMessage::controllerEvent (1, 74, 0), 0);
     m.addEvent (juce::MidiMessage::controllerEvent (1, 71, 127), 1);
     m.addEvent (juce::MidiMessage::controllerEvent (1, 76, 127), 2);
-    fill (0.2f); p.processBlock (buf, m); pump (100);
+    fill (0.2f); p.processBlock (buf, m); pump (600);
     check (value (p, ParamIDs::speed) < 0.01f, "CC 74 = 0 porta SPEED a 0");
     check (value (p, ParamIDs::depth) > 0.99f, "CC 71 = 127 porta DEPTH al massimo");
     check ((int) value (p, ParamIDs::wave) == 3, "CC 76 = 127 sceglie la quadra");
 
     // CC 65 premuto -> ENVELOPE; rilascio: niente; nuova pressione -> FILTER
     m.clear(); m.addEvent (juce::MidiMessage::controllerEvent (1, 65, 127), 0);
-    fill (0.2f); p.processBlock (buf, m); pump (100);
+    fill (0.2f); p.processBlock (buf, m); pump (600);
     check (value (p, ParamIDs::mode) > 0.5f, "CC 65 commuta su ENVELOPE");
     for (int b = 0; b < 40; ++b) { fill (0.2f); p.processBlock (buf, none); finite &= std::isfinite (rms()); }
     check (finite, "ENVELOPE: nessun NaN");
     m.clear(); m.addEvent (juce::MidiMessage::controllerEvent (1, 65, 0), 0);
     m.addEvent (juce::MidiMessage::controllerEvent (1, 65, 127), 10);
-    fill (0.2f); p.processBlock (buf, m); pump (100);
+    fill (0.2f); p.processBlock (buf, m); pump (600);
     check (value (p, ParamIDs::mode) < 0.5f, "rilascio e nuova pressione: torna su FILTER");
 
     // CC 64 premuto -> OUT (bypass): segnale diretto
     m.clear(); m.addEvent (juce::MidiMessage::controllerEvent (1, 64, 127), 0);
-    fill (0.2f); p.processBlock (buf, m); pump (100);
+    fill (0.2f); p.processBlock (buf, m); pump (600);
     check (value (p, ParamIDs::bypass) > 0.5f, "CC 64 commuta su OUT");
     for (int b = 0; b < 40; ++b) { fill (0.2f); p.processBlock (buf, none); }
     {
@@ -76,7 +81,7 @@ int main()
     }
     m.clear(); m.addEvent (juce::MidiMessage::controllerEvent (1, 64, 0), 0);
     m.addEvent (juce::MidiMessage::controllerEvent (1, 64, 127), 10);
-    fill (0.2f); p.processBlock (buf, m); pump (100);
+    fill (0.2f); p.processBlock (buf, m); pump (600);
     check (value (p, ParamIDs::bypass) < 0.5f, "nuova pressione: di nuovo IN");
     for (int b = 0; b < 40; ++b) { fill (0.2f); p.processBlock (buf, none); finite &= std::isfinite (rms()); }
     check (finite && rms() > 0.001f, "IN: il circuito riparte");
@@ -84,10 +89,10 @@ int main()
     // MIDI Learn: CC 20 su BIAS
     p.startLearn (GristleProcessor::idxBias);
     m.clear(); m.addEvent (juce::MidiMessage::controllerEvent (1, 20, 64), 0);
-    fill (0.2f); p.processBlock (buf, m); pump (50);
+    fill (0.2f); p.processBlock (buf, m); pump (400);
     check (p.getCCForParam (GristleProcessor::idxBias) == 20 && p.getLearningParam() < 0, "MIDI Learn: CC 20 assegnato a BIAS");
     m.clear(); m.addEvent (juce::MidiMessage::controllerEvent (1, 20, 0), 0);
-    fill (0.2f); p.processBlock (buf, m); pump (100);
+    fill (0.2f); p.processBlock (buf, m); pump (600);
     check (value (p, ParamIDs::bias) < 0.01f, "CC 20 muove BIAS");
 
     // stato salvato e ricaricato
@@ -102,7 +107,7 @@ int main()
     // CPU a 48 kHz
     {
         p.apvts.getParameter (ParamIDs::bias)->setValueNotifyingHost (p.apvts.getParameter (ParamIDs::bias)->convertTo0to1 ((float) grz::PanelMod::biasKnob));
-        pump (50);
+        pump (400);
         const int blocks = (int) (sr * 4 / bs);
         auto t0 = std::chrono::steady_clock::now();
         for (int b = 0; b < blocks; ++b) { fill (0.2f); p.processBlock (buf, none); }
