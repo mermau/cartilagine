@@ -582,13 +582,13 @@ namespace
     juce::Path boltPath (std::function<juce::Point<float> (float, float)> P, float)
     {
         juce::Path b;
-        b.startNewSubPath (P (296, 262));      // estremità superiore
-        b.lineTo (P (320, 262));
-        b.lineTo (P (262, 342));
-        b.lineTo (P (288, 342));
-        b.lineTo (P (182, 470));               // punta inferiore
-        b.lineTo (P (232, 366));
-        b.lineTo (P (206, 366));
+        // a punta alle due estremità (simmetrico rispetto al centro dei due gradini)
+        b.startNewSubPath (P (312, 252));      // punta superiore
+        b.lineTo (P (262, 356));
+        b.lineTo (P (288, 356));
+        b.lineTo (P (182, 484));               // punta inferiore
+        b.lineTo (P (232, 380));
+        b.lineTo (P (206, 380));
         b.closeSubPath();
         return b;
     }
